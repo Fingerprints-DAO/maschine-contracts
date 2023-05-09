@@ -30,6 +30,9 @@ contract DutchAuction is
     /// @dev Auction Config
     Config private _config;
 
+    /// @dev Total minted tokens
+    uint32 private _totalMinted;
+
     /// @dev Mapping of user address to User data
     mapping(address => User) private _userData;
 
@@ -195,6 +198,8 @@ contract DutchAuction is
         bidder.contribution = bidder.contribution + uint216(msg.value);
         bidder.tokensBidded = bidder.tokensBidded + qty;
 
+        _totalMinted += qty;
+
         // _settledPriceInWei is always the minimum price of all the bids' unit price
         if (price < _settledPriceInWei || _settledPriceInWei == 0) {
             _settledPriceInWei = price;
@@ -204,6 +209,14 @@ contract DutchAuction is
         nft.mint(qty, msg.sender);
 
         emit Bid(msg.sender, qty, price);
+    }
+
+    function withdrawFunds() external onlyRole(DEFAULT_ADMIN_ROLE) {
+        if (_config.endTime > block.timestamp) revert NotEnded();
+
+        uint256 amount = _totalMinted * _settledPriceInWei;
+        (bool success, ) = msg.sender.call{value: amount}("");
+        if (!success) revert TransferFailed();
     }
 
     function claimRefund() external nonReentrant {
