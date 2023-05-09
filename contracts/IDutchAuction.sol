@@ -10,6 +10,8 @@ interface IDutchAuction {
     error NotStarted();
     error TransferFailed();
     error UserAlreadyClaimed();
+    error BidExpired(uint256 deadline);
+    error InvalidSignature();
 
     struct User {
         uint216 contribution; // cumulative sum of Wei bids
