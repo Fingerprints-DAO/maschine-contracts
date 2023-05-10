@@ -74,16 +74,21 @@ contract DutchAuction is
     function setConfig(
         uint256 startAmountInWei,
         uint256 endAmountInWei,
+        uint216 limitInWei,
+        uint32 cooldown,
         uint64 startTime,
         uint64 endTime
     ) external onlyRole(DEFAULT_ADMIN_ROLE) {
         if (startTime == 0 || startTime >= endTime)
             revert InvalidStartEndTime(startTime, endTime);
         if (startAmountInWei == 0) revert InvalidAmountInWei();
+        if (limitInWei == 0) revert InvalidAmountInWei();
 
         _config = Config({
             startAmountInWei: startAmountInWei,
             endAmountInWei: endAmountInWei,
+            limitInWei: limitInWei,
+            cooldown: cooldown,
             startTime: startTime,
             endTime: endTime
         });
@@ -197,6 +202,9 @@ contract DutchAuction is
         User storage bidder = _userData[msg.sender]; // get user's current bid total
         bidder.contribution = bidder.contribution + uint216(msg.value);
         bidder.tokensBidded = bidder.tokensBidded + qty;
+        bidder.purchased = bidder.purchased + uint216(qty * price);
+
+        if (bidder.purchased > _config.limitInWei) revert PurchaseLimitReached();
 
         _totalMinted += qty;
 
@@ -221,7 +229,7 @@ contract DutchAuction is
 
     function claimRefund() external nonReentrant {
         Config memory config = _config;
-        if (config.endTime > block.timestamp) revert NotEnded();
+        if (config.endTime + config.cooldown > block.timestamp) revert Cooldown();
 
         _claimRefund(msg.sender);
     }
@@ -230,7 +238,7 @@ contract DutchAuction is
         address[] memory accounts
     ) external onlyRole(DEFAULT_ADMIN_ROLE) {
         Config memory config = _config;
-        if (config.endTime > block.timestamp) revert NotEnded();
+        if (config.endTime + config.cooldown > block.timestamp) revert Cooldown();
 
         uint256 length;
         for (uint256 i; i != length; ++i) {
