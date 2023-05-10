@@ -188,7 +188,9 @@ contract DutchAuction is
         }
 
         // mint tokens to user
-        nft.mint(qty, msg.sender);
+        for (uint32 i; i != qty; ++i) {
+            nft.mint(msg.sender);
+        }
 
         emit Bid(msg.sender, qty, price);
     }
