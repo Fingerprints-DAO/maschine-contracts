@@ -1,5 +1,5 @@
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
-import { BigNumber, constants, utils } from "ethers";
+import { BigNumber } from "ethers";
 
 const Bid = [
   {
@@ -20,14 +20,14 @@ const Bid = [
   },
 ];
 
-export const signBid = async (signer: SignerWithAddress, verifier: string, terms: any) => {
+export const signBid = async (signer: SignerWithAddress, verifier: string, bid: any) => {
   const types = {
     Bid,
   };
-  return await sign(signer, verifier, types, terms);
+  return await sign(signer, verifier, types, bid);
 };
 
-const sign = async (signer: SignerWithAddress, verifier: string, types: any, terms: any) => {
+const sign = async (signer: SignerWithAddress, verifier: string, types: any, obj: any) => {
   const chainId = BigNumber.from(await signer.getChainId());
   const domain = {
     name: "Fingerprints DAO Dutch Auction",
@@ -35,7 +35,7 @@ const sign = async (signer: SignerWithAddress, verifier: string, types: any, ter
     chainId,
     verifyingContract: verifier,
   };
-  const signature = await signer._signTypedData(domain, types, terms);
+  const signature = await signer._signTypedData(domain, types, obj);
   return signature;
 };
 
