@@ -18,7 +18,7 @@ describe("DutchAuction", function () {
   let startAmount: BigNumber;
   let endAmount: BigNumber;
   let limit: BigNumber;
-  let cooldown: number;
+  let refundDelayTime: number;
   let startTime: number;
   let endTime: number;
   let snapshotId: number;
@@ -40,7 +40,7 @@ describe("DutchAuction", function () {
     startAmount = ethers.utils.parseEther("2");
     endAmount = ethers.utils.parseEther("0.2");
     limit = ethers.utils.parseEther("10");
-    cooldown = 30 * 60;
+    refundDelayTime = 30 * 60;
     startTime = Math.floor(Date.now() / 1000) - 100;
     endTime = startTime + 3 * 3600;
   });
@@ -62,7 +62,7 @@ describe("DutchAuction", function () {
             startAmount,
             endAmount,
             limit,
-            cooldown,
+            refundDelayTime,
             startTime,
             endTime
           )
@@ -75,7 +75,7 @@ describe("DutchAuction", function () {
       await expect(
         auction
           .connect(admin)
-          .setConfig(startAmount, endAmount, limit, cooldown, 0, endTime)
+          .setConfig(startAmount, endAmount, limit, refundDelayTime, 0, endTime)
       )
         .to.be.revertedWithCustomError(auction, "InvalidStartEndTime")
         .withArgs(0, endTime);
@@ -85,7 +85,7 @@ describe("DutchAuction", function () {
       await expect(
         auction
           .connect(admin)
-          .setConfig(startAmount, endAmount, limit, cooldown, endTime, endTime)
+          .setConfig(startAmount, endAmount, limit, refundDelayTime, endTime, endTime)
       )
         .to.be.revertedWithCustomError(auction, "InvalidStartEndTime")
         .withArgs(endTime, endTime);
@@ -95,7 +95,7 @@ describe("DutchAuction", function () {
       await expect(
         auction
           .connect(admin)
-          .setConfig(0, endAmount, limit, cooldown, startTime, endTime)
+          .setConfig(0, endAmount, limit, refundDelayTime, startTime, endTime)
       ).to.be.revertedWithCustomError(auction, "InvalidAmountInWei");
     });
 
@@ -103,19 +103,19 @@ describe("DutchAuction", function () {
       await expect(
         auction
           .connect(admin)
-          .setConfig(startAmount, endAmount, 0, cooldown, startTime, endTime)
+          .setConfig(startAmount, endAmount, 0, refundDelayTime, startTime, endTime)
       ).to.be.revertedWithCustomError(auction, "InvalidAmountInWei");
     });
 
     it("should set config", async () => {
       await auction
         .connect(admin)
-        .setConfig(startAmount, endAmount, limit, cooldown, startTime, endTime);
+        .setConfig(startAmount, endAmount, limit, refundDelayTime, startTime, endTime);
       const config = await auction.getConfig();
       expect(config.startAmountInWei).to.be.eq(startAmount);
       expect(config.endAmountInWei).to.be.eq(endAmount);
       expect(config.limitInWei).to.be.eq(limit);
-      expect(config.cooldown).to.be.eq(cooldown);
+      expect(config.refundDelayTime).to.be.eq(refundDelayTime);
       expect(config.startTime).to.be.eq(startTime);
       expect(config.endTime).to.be.eq(endTime);
     });
@@ -125,7 +125,7 @@ describe("DutchAuction", function () {
     beforeEach(async () => {
       await auction
         .connect(admin)
-        .setConfig(startAmount, endAmount, limit, cooldown, startTime, endTime);
+        .setConfig(startAmount, endAmount, limit, refundDelayTime, startTime, endTime);
     });
 
     it("should fail to bid when deadline is expired", async () => {
@@ -250,7 +250,7 @@ describe("DutchAuction", function () {
     beforeEach(async () => {
       await auction
         .connect(admin)
-        .setConfig(startAmount, endAmount, limit, cooldown, startTime, endTime);
+        .setConfig(startAmount, endAmount, limit, refundDelayTime, startTime, endTime);
 
       const deadline1 = Math.floor(Date.now() / 1000) + 300;
       const nonce1 = await auction.getNonce(alice.address);
@@ -284,10 +284,10 @@ describe("DutchAuction", function () {
     it("should fail to claim refund before the auction is ended", async () => {
       await expect(
         auction.connect(alice).claimRefund()
-      ).to.be.revertedWithCustomError(auction, "Cooldown");
+      ).to.be.revertedWithCustomError(auction, "ClaimRefundNotReady");
     });
 
-    it("should claim refund after the auction is ended and cooldown passed", async () => {
+    it("should claim refund after the auction is ended and refundDelayTime passed", async () => {
       await increaseTime(3600 * 2 + 30 * 60);
 
       const beforeAliceBalance = await ethers.provider.getBalance(

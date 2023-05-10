@@ -13,7 +13,7 @@ interface IDutchAuction {
     error BidExpired(uint256 deadline);
     error InvalidSignature();
     error PurchaseLimitReached();
-    error Cooldown();
+    error ClaimRefundNotReady();
 
     struct User {
         uint216 contribution; // cumulative sum of Wei bids
@@ -26,7 +26,7 @@ interface IDutchAuction {
         uint256 startAmountInWei;
         uint256 endAmountInWei;
         uint216 limitInWei;
-        uint32 cooldown;
+        uint32 refundDelayTime;
         uint64 startTime;
         uint64 endTime;
     }

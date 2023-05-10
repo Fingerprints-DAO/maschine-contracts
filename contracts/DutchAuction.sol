@@ -75,20 +75,21 @@ contract DutchAuction is
         uint256 startAmountInWei,
         uint256 endAmountInWei,
         uint216 limitInWei,
-        uint32 cooldown,
+        uint32 refundDelayTime,
         uint64 startTime,
         uint64 endTime
     ) external onlyRole(DEFAULT_ADMIN_ROLE) {
         if (startTime == 0 || startTime >= endTime)
             revert InvalidStartEndTime(startTime, endTime);
-        if (startAmountInWei == 0) revert InvalidAmountInWei();
+        if (startAmountInWei == 0 || startAmountInWei <= endAmountInWei)
+            revert InvalidAmountInWei();
         if (limitInWei == 0) revert InvalidAmountInWei();
 
         _config = Config({
             startAmountInWei: startAmountInWei,
             endAmountInWei: endAmountInWei,
             limitInWei: limitInWei,
-            cooldown: cooldown,
+            refundDelayTime: refundDelayTime,
             startTime: startTime,
             endTime: endTime
         });
@@ -109,56 +110,28 @@ contract DutchAuction is
         // Return endAmountInWei if auction ended
         if (block.timestamp >= config.endTime) return config.endAmountInWei;
 
-        if (config.startAmountInWei != config.endAmountInWei) {
-            uint256 amount;
-            bool roundUp = true; // we always round up the calculation
+        // Declare variables to derive in the subsequent unchecked scope.
+        uint256 duration;
+        uint256 elapsed;
+        uint256 remaining;
 
-            // Declare variables to derive in the subsequent unchecked scope.
-            uint256 duration;
-            uint256 elapsed;
-            uint256 remaining;
+        // Skip underflow checks as startTime <= block.timestamp < endTime.
+        unchecked {
+            // Derive the duration for the order and place it on the stack.
+            duration = config.endTime - config.startTime;
 
-            // Skip underflow checks as startTime <= block.timestamp < endTime.
-            unchecked {
-                // Derive the duration for the order and place it on the stack.
-                duration = config.endTime - config.startTime;
+            // Derive time elapsed since the order started & place on stack.
+            elapsed = block.timestamp - config.startTime;
 
-                // Derive time elapsed since the order started & place on stack.
-                elapsed = block.timestamp - config.startTime;
-
-                // Derive time remaining until order expires and place on stack.
-                remaining = duration - elapsed;
-            }
-
-            // Aggregate new amounts weighted by time with rounding factor.
-            // TODO: check the math boundary here
-            uint256 totalBeforeDivision = ((config.startAmountInWei *
-                remaining) + (config.endAmountInWei * elapsed));
-
-            // Use assembly to combine operations and skip divide-by-zero check.
-            assembly {
-                // Multiply by iszero(iszero(totalBeforeDivision)) to ensure
-                // amount is set to zero if totalBeforeDivision is zero,
-                // as intermediate overflow can occur if it is zero.
-                amount := mul(
-                    iszero(iszero(totalBeforeDivision)),
-                    // Subtract 1 from the numerator and add 1 to the result if
-                    // roundUp is true to get the proper rounding direction.
-                    // Division is performed with no zero check as duration
-                    // cannot be zero as long as startTime < endTime.
-                    add(
-                        div(sub(totalBeforeDivision, roundUp), duration),
-                        roundUp
-                    )
-                )
-            }
-
-            // Return the current amount.
-            return amount;
+            // Derive time remaining until order expires and place on stack.
+            remaining = duration - elapsed;
         }
 
-        // Return the original amount as startAmount == endAmount.
-        return config.endAmountInWei;
+        return
+            (config.startAmountInWei *
+                remaining +
+                config.endAmountInWei *
+                elapsed) / duration;
     }
 
     function getNonce(address user) external view returns (uint256) {
@@ -204,7 +177,8 @@ contract DutchAuction is
         bidder.tokensBidded = bidder.tokensBidded + qty;
         bidder.purchased = bidder.purchased + uint216(qty * price);
 
-        if (bidder.purchased > _config.limitInWei) revert PurchaseLimitReached();
+        if (bidder.purchased > _config.limitInWei)
+            revert PurchaseLimitReached();
 
         _totalMinted += qty;
 
@@ -229,7 +203,8 @@ contract DutchAuction is
 
     function claimRefund() external nonReentrant {
         Config memory config = _config;
-        if (config.endTime + config.cooldown > block.timestamp) revert Cooldown();
+        if (config.endTime + config.refundDelayTime > block.timestamp)
+            revert ClaimRefundNotReady();
 
         _claimRefund(msg.sender);
     }
@@ -238,7 +213,8 @@ contract DutchAuction is
         address[] memory accounts
     ) external onlyRole(DEFAULT_ADMIN_ROLE) {
         Config memory config = _config;
-        if (config.endTime + config.cooldown > block.timestamp) revert Cooldown();
+        if (config.endTime + config.refundDelayTime > block.timestamp)
+            revert ClaimRefundNotReady();
 
         uint256 length;
         for (uint256 i; i != length; ++i) {
