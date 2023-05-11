@@ -246,6 +246,39 @@ describe("DutchAuction", function () {
     });
   });
 
+  describe("Claim More NFTs", () => {
+    beforeEach(async () => {
+      await auction
+        .connect(admin)
+        .setConfig(startAmount, endAmount, limit, refundDelayTime, startTime, endTime);
+
+      const deadline1 = Math.floor(Date.now() / 1000) + 300;
+      const nonce1 = await auction.getNonce(alice.address);
+      const qty1 = 5;
+      const signature1 = await signBid(signer, auction.address, {
+        account: alice.address,
+        qty: qty1,
+        nonce: nonce1,
+        deadline: deadline1,
+      });
+      await auction
+        .connect(alice)
+        .bid(qty1, deadline1, signature1, { value: startAmount.mul(qty1) });
+    });
+
+    it("should fail to claim nfts when there are nothing to claim", async () => {
+      await expect(
+        auction.connect(alice).claimTokens()
+      ).to.be.revertedWithCustomError(auction, "NothingToClaim");
+    });
+
+    it("should claim nfts", async () => {
+      await increaseTime(3600);
+
+      await auction.connect(alice).claimTokens();
+    });
+  });
+
   describe("Claim Refund", () => {
     beforeEach(async () => {
       await auction

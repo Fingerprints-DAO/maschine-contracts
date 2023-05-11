@@ -188,11 +188,19 @@ contract DutchAuction is
         }
 
         // mint tokens to user
-        for (uint32 i; i != qty; ++i) {
-            nft.mint(msg.sender);
-        }
+        _mintTokens(msg.sender, qty);
 
         emit Bid(msg.sender, qty, price);
+    }
+
+    function claimTokens() external whenNotPaused() validTime {
+        User storage bidder = _userData[msg.sender]; // get user's current bid total
+        uint256 price = getCurrentPriceInWei();
+        uint32 claimable = uint32(bidder.purchased / price) - bidder.tokensBidded;
+        if (claimable == 0) revert NothingToClaim();
+        _mintTokens(msg.sender, claimable);
+
+        emit Claim(msg.sender, claimable);
     }
 
     function withdrawFunds() external onlyRole(DEFAULT_ADMIN_ROLE) {
@@ -234,6 +242,12 @@ contract DutchAuction is
             (bool success, ) = account.call{value: refundInWei}("");
             if (!success) revert TransferFailed();
             emit ClaimRefund(account, refundInWei);
+        }
+    }
+
+    function _mintTokens(address to, uint32 qty) internal {
+        for (uint32 i; i != qty; ++i) {
+            nft.mint(to);
         }
     }
 }

@@ -14,6 +14,7 @@ interface IDutchAuction {
     error InvalidSignature();
     error PurchaseLimitReached();
     error ClaimRefundNotReady();
+    error NothingToClaim();
 
     struct User {
         uint216 contribution; // cumulative sum of Wei bids
@@ -32,4 +33,5 @@ interface IDutchAuction {
     }
     event ClaimRefund(address user, uint256 refundInWei);
     event Bid(address user, uint32 qty, uint256 price);
+    event Claim(address user, uint32 qty);
 }
