@@ -4,4 +4,14 @@ import "@openzeppelin/contracts/token/ERC721/presets/ERC721PresetMinterPauserAut
 
 contract MockNFT is
     ERC721PresetMinterPauserAutoId("Mock Token", "MT", "uri://")
-{}
+{
+    uint16 public tokenTokenIdMax;
+
+    constructor() {
+        tokenTokenIdMax = 1000;
+    }
+
+    function currentTokenId() external view returns (uint256) {
+        return totalSupply();
+    }
+}

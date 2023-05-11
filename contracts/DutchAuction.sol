@@ -197,7 +197,13 @@ contract DutchAuction is
         User storage bidder = _userData[msg.sender]; // get user's current bid total
         uint256 price = getCurrentPriceInWei();
         uint32 claimable = uint32(bidder.purchased / price) - bidder.tokensBidded;
+        uint32 available = nft.tokenTokenIdMax() - uint16(nft.currentTokenId());
+        if (claimable > available) claimable = available;
         if (claimable == 0) revert NothingToClaim();
+
+        bidder.tokensBidded = bidder.tokensBidded + claimable;
+        _totalMinted += claimable;
+
         _mintTokens(msg.sender, claimable);
 
         emit Claim(msg.sender, claimable);
