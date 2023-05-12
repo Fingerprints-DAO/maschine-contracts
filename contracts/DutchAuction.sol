@@ -226,14 +226,24 @@ contract DutchAuction is
         emit Bid(msg.sender, qty, price);
     }
 
+    /// @notice Return user's claimable tokens count
+    /// @param user User address
+    /// @return claimable Claimable tokens count
+    function getClaimableTokens(
+        address user
+    ) public view returns (uint32 claimable) {
+        User storage bidder = _userData[user]; // get user's current bid total
+        uint256 price = getCurrentPriceInWei();
+        claimable = uint32(bidder.contribution / price) - bidder.tokensBidded;
+        uint32 available = nft.tokenTokenIdMax() - uint16(nft.currentTokenId());
+        if (claimable > available) claimable = available;
+    }
+
     /// @notice Claim additional NFTs without additional payment
     function claimTokens() external nonReentrant whenNotPaused validTime {
         User storage bidder = _userData[msg.sender]; // get user's current bid total
         uint256 price = getCurrentPriceInWei();
-        uint32 claimable = uint32(bidder.contribution / price) -
-            bidder.tokensBidded;
-        uint32 available = nft.tokenTokenIdMax() - uint16(nft.currentTokenId());
-        if (claimable > available) claimable = available;
+        uint32 claimable = getClaimableTokens(msg.sender);
         if (claimable == 0) revert NothingToClaim();
 
         bidder.tokensBidded = bidder.tokensBidded + claimable;
