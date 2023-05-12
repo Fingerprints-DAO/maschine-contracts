@@ -20,7 +20,6 @@ interface IDutchAuction {
         uint216 contribution; // cumulative sum of Wei bids
         uint32 tokensBidded; // cumulative sum of bidded tokens
         bool refundClaimed; // has user been refunded yet
-        uint216 purchased; // cumulative sum of purchase amount
     }
 
     struct Config {

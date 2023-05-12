@@ -170,14 +170,19 @@ contract DutchAuction is
         if (signer != recoveredSigner) revert InvalidSignature();
 
         uint256 price = getCurrentPriceInWei();
-        if (msg.value < qty * price) revert NotEnoughValue();
+        uint256 payment = qty * price;
+        if (msg.value < payment) revert NotEnoughValue();
+        if (msg.value > payment) {
+            uint256 refundInWei = msg.value - payment;
+            (bool success, ) = msg.sender.call{value: refundInWei}("");
+            if (!success) revert TransferFailed();
+        }
 
         User storage bidder = _userData[msg.sender]; // get user's current bid total
-        bidder.contribution = bidder.contribution + uint216(msg.value);
+        bidder.contribution = bidder.contribution + uint216(payment);
         bidder.tokensBidded = bidder.tokensBidded + qty;
-        bidder.purchased = bidder.purchased + uint216(qty * price);
 
-        if (bidder.purchased > _config.limitInWei)
+        if (bidder.contribution > _config.limitInWei)
             revert PurchaseLimitReached();
 
         _totalMinted += qty;
@@ -193,10 +198,11 @@ contract DutchAuction is
         emit Bid(msg.sender, qty, price);
     }
 
-    function claimTokens() external whenNotPaused() validTime {
+    function claimTokens() external whenNotPaused validTime {
         User storage bidder = _userData[msg.sender]; // get user's current bid total
         uint256 price = getCurrentPriceInWei();
-        uint32 claimable = uint32(bidder.purchased / price) - bidder.tokensBidded;
+        uint32 claimable = uint32(bidder.contribution / price) -
+            bidder.tokensBidded;
         uint32 available = nft.tokenTokenIdMax() - uint16(nft.currentTokenId());
         if (claimable > available) claimable = available;
         if (claimable == 0) revert NothingToClaim();
