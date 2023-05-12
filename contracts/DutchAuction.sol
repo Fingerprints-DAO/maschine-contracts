@@ -210,6 +210,11 @@ contract DutchAuction is
         bidder.tokensBidded = bidder.tokensBidded + claimable;
         _totalMinted += claimable;
 
+        // _settledPriceInWei is always the minimum price of all the bids' unit price
+        if (price < _settledPriceInWei) {
+            _settledPriceInWei = price;
+        }
+
         _mintTokens(msg.sender, claimable);
 
         emit Claim(msg.sender, claimable);
