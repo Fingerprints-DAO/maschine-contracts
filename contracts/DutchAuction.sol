@@ -198,7 +198,7 @@ contract DutchAuction is
         emit Bid(msg.sender, qty, price);
     }
 
-    function claimTokens() external whenNotPaused validTime {
+    function claimTokens() external nonReentrant whenNotPaused validTime {
         User storage bidder = _userData[msg.sender]; // get user's current bid total
         uint256 price = getCurrentPriceInWei();
         uint32 claimable = uint32(bidder.contribution / price) -
@@ -220,7 +220,7 @@ contract DutchAuction is
         emit Claim(msg.sender, claimable);
     }
 
-    function withdrawFunds() external onlyRole(DEFAULT_ADMIN_ROLE) {
+    function withdrawFunds() external nonReentrant onlyRole(DEFAULT_ADMIN_ROLE) {
         if (_config.endTime > block.timestamp) revert NotEnded();
 
         uint256 amount = _totalMinted * _settledPriceInWei;
@@ -238,7 +238,7 @@ contract DutchAuction is
 
     function refundUsers(
         address[] memory accounts
-    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
+    ) external nonReentrant onlyRole(DEFAULT_ADMIN_ROLE) {
         Config memory config = _config;
         if (config.endTime + config.refundDelayTime > block.timestamp)
             revert ClaimRefundNotReady();
