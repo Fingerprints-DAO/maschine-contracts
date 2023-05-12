@@ -9,6 +9,7 @@ import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import "./IDutchAuction.sol";
 import "./INFT.sol";
 
+/// @notice Fingerprints DAO Ductch Auction
 contract DutchAuction is
     IDutchAuction,
     AccessControl,
@@ -48,6 +49,9 @@ contract DutchAuction is
         _;
     }
 
+    /// @notice DutchAuction Constructor
+    /// @param _nft NFT contract address
+    /// @param _signer Signer address
     constructor(address _nft, address _signer) {
         nft = INFT(_nft);
         signer = _signer;
@@ -71,6 +75,14 @@ contract DutchAuction is
         );
     }
 
+    /// @notice Set auction config
+    /// @dev Only admin can set auction config
+    /// @param startAmountInWei Auction start amount in wei
+    /// @param endAmountInWei Auction end amount in wei
+    /// @param limitInWei Maximum amount users can use to purchase NFTs
+    /// @param refundDelayTime Delay time which users need to wait to claim refund after the auction ends
+    /// @param startTime Auction start time
+    /// @param endTime Auction end time
     function setConfig(
         uint256 startAmountInWei,
         uint256 endAmountInWei,
@@ -95,14 +107,20 @@ contract DutchAuction is
         });
     }
 
+    /// @notice Get auction config
+    /// @return config Auction config
     function getConfig() external view returns (Config memory) {
         return _config;
     }
 
+    /// @notice Get auction's settled price
+    /// @return price Auction's settled price
     function getSettledPriceInWei() external view returns (uint256) {
         return _settledPriceInWei;
     }
 
+    /// @notice Get auction's current price
+    /// @return price Auction's current price
     function getCurrentPriceInWei() public view returns (uint256) {
         Config memory config = _config; // storage to memory
         // Return startAmountInWei if auction not started
@@ -134,15 +152,25 @@ contract DutchAuction is
                 elapsed) / duration;
     }
 
+    /// @notice Get user's nonce for signature verification
+    /// @param user User address
+    /// @return nonce User's nonce
     function getNonce(address user) external view returns (uint256) {
         return _nonces[user];
     }
 
+    /// @dev Return user's current nonce and increase it
+    /// @param user User address
+    /// @return current Current nonce
     function useNonce(address user) internal returns (uint256 current) {
         current = _nonces[user];
         ++_nonces[user];
     }
 
+    /// @notice Make bid to purchase NFTs
+    /// @param qty Amount of tokens to purchase
+    /// @param deadline Timestamp when the signature expires
+    /// @param signature Signature to verify user's purchase
     function bid(
         uint32 qty,
         uint256 deadline,
@@ -198,6 +226,7 @@ contract DutchAuction is
         emit Bid(msg.sender, qty, price);
     }
 
+    /// @notice Claim additional NFTs without additional payment
     function claimTokens() external nonReentrant whenNotPaused validTime {
         User storage bidder = _userData[msg.sender]; // get user's current bid total
         uint256 price = getCurrentPriceInWei();
@@ -220,7 +249,13 @@ contract DutchAuction is
         emit Claim(msg.sender, claimable);
     }
 
-    function withdrawFunds() external nonReentrant onlyRole(DEFAULT_ADMIN_ROLE) {
+    /// @notice Admin withdraw funds
+    /// @dev Only admin can withdraw funds
+    function withdrawFunds()
+        external
+        nonReentrant
+        onlyRole(DEFAULT_ADMIN_ROLE)
+    {
         if (_config.endTime > block.timestamp) revert NotEnded();
 
         uint256 amount = _totalMinted * _settledPriceInWei;
@@ -228,6 +263,7 @@ contract DutchAuction is
         if (!success) revert TransferFailed();
     }
 
+    /// @notice Claim refund payment
     function claimRefund() external nonReentrant {
         Config memory config = _config;
         if (config.endTime + config.refundDelayTime > block.timestamp)
@@ -236,6 +272,8 @@ contract DutchAuction is
         _claimRefund(msg.sender);
     }
 
+    /// @notice Admin forces users to claim refund
+    /// @param accounts User addresses
     function refundUsers(
         address[] memory accounts
     ) external nonReentrant onlyRole(DEFAULT_ADMIN_ROLE) {
@@ -249,6 +287,8 @@ contract DutchAuction is
         }
     }
 
+    /// @dev Claim refund
+    /// @param account User address
     function _claimRefund(address account) internal {
         User storage user = _userData[account];
         if (user.refundClaimed) revert UserAlreadyClaimed();
@@ -262,6 +302,9 @@ contract DutchAuction is
         }
     }
 
+    /// @notice Mint `qty` NFTs to `to` address
+    /// @param to To address
+    /// @param qty Amount of NFTs to mint
     function _mintTokens(address to, uint32 qty) internal {
         for (uint32 i; i != qty; ++i) {
             nft.mint(to);
