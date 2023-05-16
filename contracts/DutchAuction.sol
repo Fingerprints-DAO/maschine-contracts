@@ -41,8 +41,7 @@ contract DutchAuction is
     mapping(address => uint256) private _nonces;
 
     modifier validConfig() {
-        Config memory config = _config;
-        if (config.endTime == 0 || config.startTime == 0) revert ConfigNotSet();
+        if (_config.startTime == 0) revert ConfigNotSet();
         _;
     }
 
@@ -260,13 +259,9 @@ contract DutchAuction is
 
     /// @notice Claim additional NFTs without additional payment
     /// @param amount Number of tokens to claim
-    function claimTokens(uint32 amount)
-        external
-        nonReentrant
-        whenNotPaused
-        validConfig
-        validTime
-    {
+    function claimTokens(
+        uint32 amount
+    ) external nonReentrant whenNotPaused validConfig validTime {
         User storage bidder = _userData[msg.sender]; // get user's current bid total
         uint256 price = getCurrentPriceInWei();
         uint32 claimable = getClaimableTokens(msg.sender);
@@ -313,12 +308,18 @@ contract DutchAuction is
     /// @param accounts User addresses
     function refundUsers(
         address[] memory accounts
-    ) external nonReentrant validConfig onlyRole(DEFAULT_ADMIN_ROLE) {
+    )
+        external
+        nonReentrant
+        whenNotPaused
+        validConfig
+        onlyRole(DEFAULT_ADMIN_ROLE)
+    {
         Config memory config = _config;
         if (config.endTime + config.refundDelayTime > block.timestamp)
             revert ClaimRefundNotReady();
 
-        uint256 length;
+        uint256 length = accounts.length;
         for (uint256 i; i != length; ++i) {
             _claimRefund(accounts[i]);
         }

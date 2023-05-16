@@ -452,32 +452,14 @@ describe("DutchAuction", function () {
           );
 
         const deadline1 = Math.floor(Date.now() / 1000) + 300;
-        const nonce1 = await auction.getNonce(alice.address);
         const qty1 = 5;
-        const signature1 = await signBid(signer, auction.address, {
-          account: alice.address,
-          qty: qty1,
-          nonce: nonce1,
-          deadline: deadline1,
-        });
-        await auction
-          .connect(alice)
-          .bid(qty1, deadline1, signature1, { value: startAmount.mul(qty1) });
+        await makeBid(alice, deadline1, qty1, startAmount.mul(qty1));
 
         await increaseTime(3600);
 
         const deadline2 = deadline1 + 3600;
-        const nonce2 = await auction.getNonce(bob.address);
         const qty2 = 3;
-        const signature2 = await signBid(signer, auction.address, {
-          account: bob.address,
-          qty: qty2,
-          nonce: nonce2,
-          deadline: deadline2,
-        });
-        await auction.connect(bob).bid(qty2, deadline2, signature2, {
-          value: startAmount.sub(startAmount.sub(endAmount).div(3)).mul(qty2),
-        });
+        await makeBid(bob, deadline2, qty2, startAmount.mul(qty2));
       });
 
       it("should fail to claim refund when paused", async () => {
@@ -528,6 +510,95 @@ describe("DutchAuction", function () {
         ).to.be.revertedWithCustomError(auction, "UserAlreadyClaimed");
         await expect(
           auction.connect(bob).claimRefund()
+        ).to.be.revertedWithCustomError(auction, "UserAlreadyClaimed");
+      });
+    });
+  });
+
+  describe("Admin Refund Users", () => {
+    it("should fail to claim refund when config is not set", async () => {
+      await expect(
+        auction.connect(admin).refundUsers([alice.address, bob.address])
+      ).to.be.revertedWithCustomError(auction, "ConfigNotSet");
+    });
+
+    describe("When config is set", () => {
+      beforeEach(async () => {
+        await auction
+          .connect(admin)
+          .setConfig(
+            startAmount,
+            endAmount,
+            limit,
+            refundDelayTime,
+            startTime,
+            endTime
+          );
+
+        const deadline1 = Math.floor(Date.now() / 1000) + 300;
+        const qty1 = 5;
+        await makeBid(alice, deadline1, qty1, startAmount.mul(qty1));
+
+        await increaseTime(3600);
+
+        const deadline2 = deadline1 + 3600;
+        const qty2 = 3;
+        await makeBid(bob, deadline2, qty2, startAmount.mul(qty2));
+      });
+
+      it("should fail to refund users as non-admin", async () => {
+        await expect(
+          auction.connect(alice).refundUsers([bob.address])
+        ).to.be.revertedWith(
+          `AccessControl: account ${alice.address.toLowerCase()} is missing role ${defaultAdminRole}`
+        );
+      });
+
+      it("should fail to refund users when paused", async () => {
+        await auction.connect(admin).pause();
+        await expect(
+          auction.connect(admin).refundUsers([alice.address, bob.address])
+        ).to.be.revertedWith("Pausable: paused");
+      });
+
+      it("should fail to refund users before the auction is ended", async () => {
+        await expect(
+          auction.connect(admin).refundUsers([alice.address, bob.address])
+        ).to.be.revertedWithCustomError(auction, "ClaimRefundNotReady");
+      });
+
+      it("should refund users after the auction is ended and refundDelayTime passed", async () => {
+        await increaseTime(3600 * 2 + 30 * 60);
+
+        const beforeAliceBalance = await ethers.provider.getBalance(
+          alice.address
+        );
+        const beforeBobBalance = await ethers.provider.getBalance(bob.address);
+        const tx = await auction
+          .connect(admin)
+          .refundUsers([alice.address, bob.address]);
+        await expect(tx).to.emit(auction, "ClaimRefund");
+        const afterAliceBalance = await ethers.provider.getBalance(
+          alice.address
+        );
+        const afterBobBalance = await ethers.provider.getBalance(bob.address);
+        expect(afterAliceBalance).to.be.closeTo(
+          beforeAliceBalance.add(startAmount.sub(endAmount).div(3).mul(5)),
+          ethers.utils.parseEther("0.1")
+        );
+        expect(afterBobBalance).to.be.closeTo(
+          beforeBobBalance,
+          ethers.utils.parseEther("0.1")
+        );
+      });
+
+      it("should fail to refund users twice", async () => {
+        await increaseTime(3600 * 2 + 30 * 60);
+
+        await auction.connect(admin).refundUsers([alice.address, bob.address]);
+
+        await expect(
+          auction.connect(admin).refundUsers([alice.address, bob.address])
         ).to.be.revertedWithCustomError(auction, "UserAlreadyClaimed");
       });
     });
