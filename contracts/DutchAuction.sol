@@ -42,8 +42,7 @@ contract DutchAuction is
 
     modifier validConfig() {
         Config memory config = _config;
-        if (config.endTime == 0 || config.startTime == 0)
-            revert ConfigNotSet();
+        if (config.endTime == 0 || config.startTime == 0) revert ConfigNotSet();
         _;
     }
 
@@ -98,6 +97,9 @@ contract DutchAuction is
         uint64 startTime,
         uint64 endTime
     ) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        if (_config.startTime != 0 && _config.startTime <= block.timestamp)
+            revert ConfigAlreadySet();
+
         if (startTime == 0 || startTime >= endTime)
             revert InvalidStartEndTime(startTime, endTime);
         if (startAmountInWei == 0 || startAmountInWei <= endAmountInWei)
@@ -257,7 +259,13 @@ contract DutchAuction is
     }
 
     /// @notice Claim additional NFTs without additional payment
-    function claimTokens() external nonReentrant whenNotPaused validConfig validTime {
+    function claimTokens()
+        external
+        nonReentrant
+        whenNotPaused
+        validConfig
+        validTime
+    {
         User storage bidder = _userData[msg.sender]; // get user's current bid total
         uint256 price = getCurrentPriceInWei();
         uint32 claimable = getClaimableTokens(msg.sender);

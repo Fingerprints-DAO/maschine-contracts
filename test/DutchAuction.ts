@@ -140,6 +140,31 @@ describe("DutchAuction", function () {
       expect(config.startTime).to.be.eq(startTime);
       expect(config.endTime).to.be.eq(endTime);
     });
+
+    it("should fail to set config when auction is started", async () => {
+      await auction
+        .connect(admin)
+        .setConfig(
+          startAmount,
+          endAmount,
+          limit,
+          refundDelayTime,
+          startTime,
+          endTime
+        );
+      await expect(
+        auction
+          .connect(admin)
+          .setConfig(
+            startAmount,
+            endAmount,
+            limit,
+            refundDelayTime,
+            startTime,
+            endTime
+          )
+      ).to.be.revertedWithCustomError(auction, "ConfigAlreadySet");
+    });
   });
 
   describe("Pause/Unpause", () => {
