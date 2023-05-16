@@ -603,4 +603,54 @@ describe("DutchAuction", function () {
       });
     });
   });
+
+  describe("Withdraw Funds", () => {
+    beforeEach(async () => {
+      await auction
+        .connect(admin)
+        .setConfig(
+          startAmount,
+          endAmount,
+          limit,
+          refundDelayTime,
+          startTime,
+          endTime
+        );
+
+      const deadline1 = Math.floor(Date.now() / 1000) + 300;
+      const qty1 = 5;
+      await makeBid(alice, deadline1, qty1, startAmount.mul(qty1));
+
+      await increaseTime(3600);
+
+      const deadline2 = deadline1 + 3600;
+      const qty2 = 3;
+      await makeBid(bob, deadline2, qty2, startAmount.mul(qty2));
+    });
+
+    it("should fail to withdraw funds when auction is not ended", async () => {
+      await expect(
+        auction.connect(admin).withdrawFunds()
+      ).to.be.revertedWithCustomError(auction, "NotEnded");
+    });
+
+    it("should fail to withdraw funds as non-admin", async () => {
+      await increaseTime(2 * 3600);
+      await expect(auction.connect(alice).withdrawFunds()).to.be.revertedWith(
+        `AccessControl: account ${alice.address.toLowerCase()} is missing role ${defaultAdminRole}`
+      );
+    });
+
+    it("should withdraw funds", async () => {
+      await increaseTime(2 * 3600);
+      const settledPrice = await auction.getSettledPriceInWei();
+      const beforeBalance = await ethers.provider.getBalance(admin.address);
+      await auction.connect(admin).withdrawFunds();
+      const afterBalance = await ethers.provider.getBalance(admin.address);
+      expect(afterBalance).to.be.closeTo(
+        beforeBalance.add(settledPrice.mul(8)),
+        ethers.utils.parseEther("0.01")
+      );
+    });
+  });
 });
