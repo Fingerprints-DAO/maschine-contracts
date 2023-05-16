@@ -361,7 +361,7 @@ describe("DutchAuction", function () {
   describe("Claim More NFTs", () => {
     it("should fail to claim nfts when config is not set", async () => {
       await expect(
-        auction.connect(alice).claimTokens()
+        auction.connect(alice).claimTokens(2)
       ).to.be.revertedWithCustomError(auction, "ConfigNotSet");
     });
 
@@ -378,30 +378,36 @@ describe("DutchAuction", function () {
             endTime
           );
 
-        const deadline1 = Math.floor(Date.now() / 1000) + 300;
-        const nonce1 = await auction.getNonce(alice.address);
-        const qty1 = 5;
-        const signature1 = await signBid(signer, auction.address, {
-          account: alice.address,
-          qty: qty1,
-          nonce: nonce1,
-          deadline: deadline1,
-        });
-        await auction
-          .connect(alice)
-          .bid(qty1, deadline1, signature1, { value: startAmount.mul(qty1) });
+        const deadline = Math.floor(Date.now() / 1000) + 300;
+        const qty = 3;
+        await makeBid(alice, deadline, qty, startAmount.mul(qty));
       });
 
       it("should fail to claim nfts when there are nothing to claim", async () => {
         await expect(
-          auction.connect(alice).claimTokens()
+          auction.connect(alice).claimTokens(2)
         ).to.be.revertedWithCustomError(auction, "NothingToClaim");
       });
 
-      it("should claim nfts", async () => {
+      it("should claim nfts - less than claimable", async () => {
+        await increaseTime(2 * 3600);
+
+        const tx = await auction.connect(alice).claimTokens(2);
+        await expect(tx).to.emit(auction, "Claim").withArgs(alice.address, 2);
+      });
+
+      it("should claim nfts - more than claimable", async () => {
         await increaseTime(3600);
 
-        await auction.connect(alice).claimTokens();
+        const tx = await auction.connect(alice).claimTokens(5);
+        await expect(tx).to.emit(auction, "Claim").withArgs(alice.address, 1);
+      });
+
+      it("should claim nfts and claim again later", async () => {
+        await increaseTime(3600);
+        await auction.connect(alice).claimTokens(5);
+        await increaseTime(3600);
+        await auction.connect(alice).claimTokens(2);
       });
     });
   });

@@ -259,7 +259,8 @@ contract DutchAuction is
     }
 
     /// @notice Claim additional NFTs without additional payment
-    function claimTokens()
+    /// @param amount Number of tokens to claim
+    function claimTokens(uint32 amount)
         external
         nonReentrant
         whenNotPaused
@@ -269,19 +270,20 @@ contract DutchAuction is
         User storage bidder = _userData[msg.sender]; // get user's current bid total
         uint256 price = getCurrentPriceInWei();
         uint32 claimable = getClaimableTokens(msg.sender);
-        if (claimable == 0) revert NothingToClaim();
+        if (amount > claimable) amount = claimable;
+        if (amount == 0) revert NothingToClaim();
 
-        bidder.tokensBidded = bidder.tokensBidded + claimable;
-        _totalMinted += claimable;
+        bidder.tokensBidded = bidder.tokensBidded + amount;
+        _totalMinted += amount;
 
         // _settledPriceInWei is always the minimum price of all the bids' unit price
         if (price < _settledPriceInWei) {
             _settledPriceInWei = price;
         }
 
-        _mintTokens(msg.sender, claimable);
+        _mintTokens(msg.sender, amount);
 
-        emit Claim(msg.sender, claimable);
+        emit Claim(msg.sender, amount);
     }
 
     /// @notice Admin withdraw funds
