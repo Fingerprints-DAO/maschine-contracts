@@ -23,6 +23,31 @@ describe("DutchAuction", function () {
   let endTime: number;
   let snapshotId: number;
 
+  const getSignature = async (
+    account: string,
+    deadline: number,
+    qty: number
+  ) => {
+    const nonce = await auction.getNonce(account);
+    const signature = await signBid(signer, auction.address, {
+      account,
+      qty,
+      nonce,
+      deadline,
+    });
+    return signature;
+  };
+
+  const makeBid = async (
+    user: SignerWithAddress,
+    deadline: number,
+    qty: number,
+    value: BigNumber
+  ) => {
+    const signature = await getSignature(user.address, deadline, qty);
+    await auction.connect(user).bid(qty, deadline, signature, { value });
+  };
+
   before("Deploy", async () => {
     [admin, alice, bob, signer] = await ethers.getSigners();
 
@@ -195,14 +220,8 @@ describe("DutchAuction", function () {
   describe("Bid", () => {
     it("should fail to bid when config is not set", async () => {
       const deadline = Math.floor(Date.now() / 1000) + 1000;
-      const nonce = await auction.getNonce(alice.address);
       const qty = 5;
-      const signature = await signBid(signer, auction.address, {
-        account: alice.address,
-        qty,
-        nonce,
-        deadline,
-      });
+      const signature = await getSignature(alice.address, deadline, qty);
       await expect(
         auction
           .connect(alice)
@@ -226,14 +245,8 @@ describe("DutchAuction", function () {
 
       it("should fail to bid when deadline is expired", async () => {
         const deadline = Math.floor(Date.now() / 1000) - 1000;
-        const nonce = await auction.getNonce(alice.address);
         const qty = 5;
-        const signature = await signBid(signer, auction.address, {
-          account: alice.address,
-          qty,
-          nonce,
-          deadline,
-        });
+        const signature = await getSignature(alice.address, deadline, qty);
         await expect(
           auction
             .connect(alice)
@@ -245,14 +258,8 @@ describe("DutchAuction", function () {
 
       it("should fail to bid when signature is invalid", async () => {
         const deadline = Math.floor(Date.now() / 1000) + 300;
-        const nonce = await auction.getNonce(alice.address);
         const qty = 5;
-        const signature = await signBid(signer, auction.address, {
-          account: bob.address,
-          qty,
-          nonce,
-          deadline,
-        });
+        const signature = await getSignature(bob.address, deadline, qty);
         await expect(
           auction
             .connect(alice)
@@ -262,14 +269,8 @@ describe("DutchAuction", function () {
 
       it("should fail to bid when insufficient eth is sent", async () => {
         const deadline = Math.floor(Date.now() / 1000) + 300;
-        const nonce = await auction.getNonce(alice.address);
         const qty = 5;
-        const signature = await signBid(signer, auction.address, {
-          account: alice.address,
-          qty,
-          nonce,
-          deadline,
-        });
+        const signature = await getSignature(alice.address, deadline, qty);
         await expect(
           auction.connect(alice).bid(qty, deadline, signature, { value: 0 })
         ).to.be.revertedWithCustomError(auction, "NotEnoughValue");
@@ -279,12 +280,7 @@ describe("DutchAuction", function () {
         const deadline = Math.floor(Date.now() / 1000) + 300;
         const nonce = await auction.getNonce(alice.address);
         const qty = 5;
-        const signature = await signBid(signer, auction.address, {
-          account: alice.address,
-          qty,
-          nonce,
-          deadline,
-        });
+        const signature = await getSignature(alice.address, deadline, qty);
         const tx = await auction
           .connect(alice)
           .bid(qty, deadline, signature, { value: startAmount.mul(qty) });
@@ -292,6 +288,31 @@ describe("DutchAuction", function () {
         await expect(tx).to.emit(auction, "Bid");
         expect(await nft.balanceOf(alice.address)).to.be.eq(qty);
         expect(await auction.getNonce(alice.address)).to.be.eq(nonce.add(1));
+      });
+
+      it("should bid more than twice before limit reached", async () => {
+        const deadline = Math.floor(Date.now() / 1000) + 3 * 3600;
+        const value = startAmount.mul(5);
+        await increaseTime(3600);
+        await makeBid(alice, deadline, 5, value); // 1.4 x 5 = 7
+        await increaseTime(30 * 60);
+        await makeBid(alice, deadline, 2, value); // 1.1 x 2 = 2.2
+        await increaseTime(30 * 60);
+        await makeBid(alice, deadline, 1, value); // 0.8 x 1 = 0.8
+      });
+
+      it("should fail to bid when limit reached", async () => {
+        const deadline = Math.floor(Date.now() / 1000) + 3 * 3600;
+        const value = startAmount.mul(5);
+        await increaseTime(3600);
+        await makeBid(alice, deadline, 5, value); // 1.4 x 5 = 7
+        await increaseTime(40 * 60);
+        await makeBid(alice, deadline, 3, value); // 1 x 3 = 3
+        await increaseTime(30 * 60);
+        const signature = await getSignature(alice.address, deadline, 2);
+        await expect(
+          auction.connect(alice).bid(2, deadline, signature, { value })
+        ).to.be.revertedWithCustomError(auction, "PurchaseLimitReached");
       });
 
       it("should fail to purchase more than limit", async () => {
@@ -325,14 +346,8 @@ describe("DutchAuction", function () {
 
       it("should fail to bid when auction is ended", async () => {
         const deadline = Math.floor(Date.now() / 1000) + 300;
-        const nonce = await auction.getNonce(alice.address);
         const qty = 5;
-        const signature = await signBid(signer, auction.address, {
-          account: alice.address,
-          qty,
-          nonce,
-          deadline,
-        });
+        const signature = await getSignature(alice.address, deadline, qty);
         await increaseTime(3 * 3600);
         await expect(
           auction.connect(alice).bid(qty, deadline, signature, { value: 0 })
