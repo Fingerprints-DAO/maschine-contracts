@@ -40,6 +40,13 @@ contract DutchAuction is
     /// @dev Mapping of user address to nonce
     mapping(address => uint256) private _nonces;
 
+    modifier validConfig() {
+        Config memory config = _config;
+        if (config.endTime == 0 || config.startTime == 0)
+            revert ConfigNotSet();
+        _;
+    }
+
     modifier validTime() {
         Config memory config = _config;
         if (
@@ -185,7 +192,7 @@ contract DutchAuction is
         uint32 qty,
         uint256 deadline,
         bytes memory signature
-    ) external payable nonReentrant whenNotPaused validTime {
+    ) external payable nonReentrant whenNotPaused validConfig validTime {
         if (block.timestamp > deadline) revert BidExpired(deadline);
 
         bytes32 hashStruct = keccak256(
@@ -250,7 +257,7 @@ contract DutchAuction is
     }
 
     /// @notice Claim additional NFTs without additional payment
-    function claimTokens() external nonReentrant whenNotPaused validTime {
+    function claimTokens() external nonReentrant whenNotPaused validConfig validTime {
         User storage bidder = _userData[msg.sender]; // get user's current bid total
         uint256 price = getCurrentPriceInWei();
         uint32 claimable = getClaimableTokens(msg.sender);
@@ -284,7 +291,7 @@ contract DutchAuction is
     }
 
     /// @notice Claim refund payment
-    function claimRefund() external nonReentrant {
+    function claimRefund() external nonReentrant validConfig {
         Config memory config = _config;
         if (config.endTime + config.refundDelayTime > block.timestamp)
             revert ClaimRefundNotReady();
@@ -296,7 +303,7 @@ contract DutchAuction is
     /// @param accounts User addresses
     function refundUsers(
         address[] memory accounts
-    ) external nonReentrant onlyRole(DEFAULT_ADMIN_ROLE) {
+    ) external nonReentrant validConfig onlyRole(DEFAULT_ADMIN_ROLE) {
         Config memory config = _config;
         if (config.endTime + config.refundDelayTime > block.timestamp)
             revert ClaimRefundNotReady();
