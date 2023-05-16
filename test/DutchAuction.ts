@@ -243,6 +243,18 @@ describe("DutchAuction", function () {
           );
       });
 
+      it("should fail to bid when paused", async () => {
+        await auction.connect(admin).pause();
+        const deadline = Math.floor(Date.now() / 1000) + 1000;
+        const qty = 5;
+        const signature = await getSignature(alice.address, deadline, qty);
+        await expect(
+          auction
+            .connect(alice)
+            .bid(qty, deadline, signature, { value: startAmount.mul(qty) })
+        ).to.be.revertedWith("Pausable: paused");
+      });
+
       it("should fail to bid when deadline is expired", async () => {
         const deadline = Math.floor(Date.now() / 1000) - 1000;
         const qty = 5;
@@ -383,6 +395,13 @@ describe("DutchAuction", function () {
         await makeBid(alice, deadline, qty, startAmount.mul(qty));
       });
 
+      it("should fail to claim nfts when paused", async () => {
+        await auction.connect(admin).pause();
+        await expect(auction.connect(alice).claimTokens(2)).to.be.revertedWith(
+          "Pausable: paused"
+        );
+      });
+
       it("should fail to claim nfts when there are nothing to claim", async () => {
         await expect(
           auction.connect(alice).claimTokens(2)
@@ -459,6 +478,13 @@ describe("DutchAuction", function () {
         await auction.connect(bob).bid(qty2, deadline2, signature2, {
           value: startAmount.sub(startAmount.sub(endAmount).div(3)).mul(qty2),
         });
+      });
+
+      it("should fail to claim refund when paused", async () => {
+        await auction.connect(admin).pause();
+        await expect(auction.connect(alice).claimRefund()).to.be.revertedWith(
+          "Pausable: paused"
+        );
       });
 
       it("should fail to claim refund before the auction is ended", async () => {

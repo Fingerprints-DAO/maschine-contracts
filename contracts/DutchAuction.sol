@@ -301,7 +301,7 @@ contract DutchAuction is
     }
 
     /// @notice Claim refund payment
-    function claimRefund() external nonReentrant validConfig {
+    function claimRefund() external nonReentrant whenNotPaused validConfig {
         Config memory config = _config;
         if (config.endTime + config.refundDelayTime > block.timestamp)
             revert ClaimRefundNotReady();
