@@ -121,6 +121,31 @@ describe("DutchAuction", function () {
     });
   });
 
+  describe("Pause/Unpause", () => {
+    it("should fail pause the contract as non-admin", async () => {
+      await expect(auction.connect(alice).pause()).to.be.revertedWith(
+        `AccessControl: account ${alice.address.toLowerCase()} is missing role ${defaultAdminRole}`
+      );
+    });
+
+    it("should pause the contract", async () => {
+      await auction.connect(admin).pause();
+      expect(await auction.paused()).to.be.eq(true);
+    });
+
+    it("should fail unpause the contract as non-admin", async () => {
+      await expect(auction.connect(alice).unpause()).to.be.revertedWith(
+        `AccessControl: account ${alice.address.toLowerCase()} is missing role ${defaultAdminRole}`
+      );
+    });
+
+    it("should pause the contract", async () => {
+      await auction.connect(admin).pause();
+      await auction.connect(admin).unpause();
+      expect(await auction.paused()).to.be.eq(false);
+    });
+  });
+
   describe("Bid", () => {
     beforeEach(async () => {
       await auction

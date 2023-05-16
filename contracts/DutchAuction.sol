@@ -107,6 +107,16 @@ contract DutchAuction is
         });
     }
 
+    /// @notice Pause the auction
+    function pause() external onlyRole(DEFAULT_ADMIN_ROLE) {
+        _pause();
+    }
+
+    /// @notice Unpause the auction
+    function unpause() external onlyRole(DEFAULT_ADMIN_ROLE) {
+        _unpause();
+    }
+
     /// @notice Get auction config
     /// @return config Auction config
     function getConfig() external view returns (Config memory) {
