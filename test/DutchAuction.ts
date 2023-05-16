@@ -146,6 +146,21 @@ describe("DutchAuction", function () {
       ).to.be.revertedWithCustomError(auction, "InvalidAmountInWei");
     });
 
+    it("should fail to set config when startAmount <= endAmount", async () => {
+      await expect(
+        auction
+          .connect(admin)
+          .setConfig(
+            startAmount,
+            startAmount,
+            limit,
+            refundDelayTime,
+            startTime,
+            endTime
+          )
+      ).to.be.revertedWithCustomError(auction, "InvalidAmountInWei");
+    });
+
     it("should set config", async () => {
       await auction
         .connect(admin)
@@ -217,6 +232,40 @@ describe("DutchAuction", function () {
     });
   });
 
+  describe("Get current price", () => {
+    it("should return start amount before auction starts", async () => {
+      const newStartTime = Math.floor(Date.now() / 1000) + 1000;
+      await auction
+        .connect(admin)
+        .setConfig(
+          startAmount,
+          endAmount,
+          limit,
+          refundDelayTime,
+          newStartTime,
+          endTime
+        );
+
+      expect(await auction.getCurrentPriceInWei()).to.be.eq(startAmount);
+    });
+
+    it("should return end amount after auction ends", async () => {
+      await auction
+        .connect(admin)
+        .setConfig(
+          startAmount,
+          endAmount,
+          limit,
+          refundDelayTime,
+          startTime,
+          endTime
+        );
+      await increaseTime(3 * 3600);
+
+      expect(await auction.getCurrentPriceInWei()).to.be.eq(endAmount);
+    });
+  });
+
   describe("Bid", () => {
     it("should fail to bid when config is not set", async () => {
       const deadline = Math.floor(Date.now() / 1000) + 1000;
@@ -227,6 +276,29 @@ describe("DutchAuction", function () {
           .connect(alice)
           .bid(qty, deadline, signature, { value: startAmount.mul(qty) })
       ).to.be.revertedWithCustomError(auction, "ConfigNotSet");
+    });
+
+    it("should fail to bid before auction starts", async () => {
+      const newStartTime = Math.floor(Date.now() / 1000) + 1000;
+      await auction
+        .connect(admin)
+        .setConfig(
+          startAmount,
+          endAmount,
+          limit,
+          refundDelayTime,
+          newStartTime,
+          endTime
+        );
+
+      const deadline = Math.floor(Date.now() / 1000) + 300;
+      const qty = 5;
+      const signature = await getSignature(alice.address, deadline, qty);
+      await expect(
+        auction.connect(alice).bid(qty, deadline, signature, { value: 0 })
+      )
+        .to.be.revertedWithCustomError(auction, "InvalidStartEndTime")
+        .withArgs(newStartTime, endTime);
     });
 
     describe("When config is set", () => {
