@@ -207,6 +207,41 @@ describe("DutchAuction", function () {
     });
   });
 
+  describe("setNftContractAddress", function () {
+    it("should set the NFT contract address", async function () {
+      const newAddress = "0x1234567890123456789012345678901234567890";
+      await expect(auction.connect(admin).setNftContractAddress(newAddress)).to.not.be.reverted;
+      expect(await auction.nftContractAddress()).to.equal(newAddress);
+    });
+
+    it("should revert if called by non-admin", async function () {
+      const newAddress = "0x1234567890123456789012345678901234567890";
+      await expect(auction.connect(alice).setNftContractAddress(newAddress)).to.be.revertedWith(/AccessControl/);
+    });
+
+    it("should revert if new address is zero", async function () {
+      await expect(auction.connect(admin).setNftContractAddress(ethers.constants.AddressZero)).to.be.revertedWith(/zero address not allowed/);
+    });
+  });
+
+
+  describe("setSigner", function () {
+    it("should set the signer address", async function () {
+      const newAddress = "0x1234567890123456789012345678901234567890";
+      await expect(auction.connect(admin).setSignerAddress(newAddress)).to.not.be.reverted;
+      expect(await auction.signerAddress()).to.equal(newAddress);
+    });
+
+    it("should revert if called by non-admin", async function () {
+      const newAddress = "0x1234567890123456789012345678901234567890";
+      await expect(auction.connect(alice).setSignerAddress(newAddress)).to.be.revertedWith(/AccessControl/);
+    });
+
+    it("should revert if new address is zero", async function () {
+      await expect(auction.connect(admin).setSignerAddress(ethers.constants.AddressZero)).to.be.revertedWith(/zero address not allowed/);
+    });
+  });
+
   describe("Pause/Unpause", () => {
     it("should fail pause the contract as non-admin", async () => {
       await expect(auction.connect(alice).pause()).to.be.revertedWith(

@@ -19,11 +19,11 @@ contract DutchAuction is
     /// @notice EIP712 Domain Hash
     bytes32 public immutable eip712DomainHash;
 
-    /// @notice NFT contract
-    INFT public nft;
+    /// @notice NFT contract address
+    INFT public nftContractAddress;
 
     /// @notice Signer address
-    address public signer;
+    address public signerAddress;
 
     /// @dev Settled Price in wei
     uint256 private _settledPriceInWei;
@@ -55,11 +55,11 @@ contract DutchAuction is
     }
 
     /// @notice DutchAuction Constructor
-    /// @param _nft NFT contract address
-    /// @param _signer Signer address
-    constructor(address _nft, address _signer) {
-        nft = INFT(_nft);
-        signer = _signer;
+    /// @param _nftAddress NFT contract address
+    /// @param _signerAddress Signer address
+    constructor(address _nftAddress, address _signerAddress) {
+        nftContractAddress = INFT(_nftAddress);
+        signerAddress = _signerAddress;
 
         _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
 
@@ -113,6 +113,34 @@ contract DutchAuction is
             startTime: startTime,
             endTime: endTime
         });
+    }
+
+    /**
+     * @dev Sets the address of the NFT contract.
+     *
+     * Requirements:
+     * - Caller must have the DEFAULT_ADMIN_ROLE.
+     * - New address must not be the zero address.
+     *
+     * @param newAddress The address of the new NFT contract.
+     */
+    function setNftContractAddress(address newAddress) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        require(newAddress != address(0), "Invalid address: zero address not allowed");
+        nftContractAddress = INFT(newAddress);
+    }
+
+    /**
+     * @dev Sets the signer address.
+     *
+     * Requirements:
+     * - Caller must have the DEFAULT_ADMIN_ROLE.
+     * - New address must not be the zero address.
+     *
+     * @param newAddress The address of the new signer.
+     */
+    function setSignerAddress(address newAddress) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        require(newAddress != address(0), "Invalid address: zero address not allowed");
+        signerAddress = newAddress;
     }
 
     /// @notice Pause the auction
@@ -213,7 +241,7 @@ contract DutchAuction is
         );
 
         address recoveredSigner = ECDSA.recover(hash, signature);
-        if (signer != recoveredSigner) revert InvalidSignature();
+        if (signerAddress != recoveredSigner) revert InvalidSignature();
 
         uint256 price = getCurrentPriceInWei();
         uint256 payment = qty * price;
@@ -253,7 +281,7 @@ contract DutchAuction is
         User storage bidder = _userData[user]; // get user's current bid total
         uint256 price = getCurrentPriceInWei();
         claimable = uint32(bidder.contribution / price) - bidder.tokensBidded;
-        uint32 available = nft.tokenTokenIdMax() - uint16(nft.currentTokenId());
+        uint32 available = nftContractAddress.tokenTokenIdMax() - uint16(nftContractAddress.currentTokenId());
         if (claimable > available) claimable = available;
     }
 
@@ -345,7 +373,7 @@ contract DutchAuction is
     /// @param qty Amount of NFTs to mint
     function _mintTokens(address to, uint32 qty) internal {
         for (uint32 i; i != qty; ++i) {
-            nft.mint(to);
+            nftContractAddress.mint(to);
         }
     }
 }
