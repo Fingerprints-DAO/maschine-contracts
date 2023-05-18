@@ -43,10 +43,18 @@ describe("DutchAuction", function () {
     user: SignerWithAddress,
     deadline: number,
     qty: number,
-    value: BigNumber
+    value: BigNumber,
+    returnPrice = false,
   ) => {
     const signature = await getSignature(user.address, deadline, qty);
-    await auction.connect(user).bid(qty, deadline, signature, { value });
+    const tx = await auction.connect(user).bid(qty, deadline, signature, { value });
+    
+    if (returnPrice) {
+      const receipt = await tx.wait();
+      const event = receipt?.events?.find((event) => event.event === "Bid");
+      const finalPrice = event?.args?.price;
+      return finalPrice;
+    }
   };
 
   before("Deploy", async () => {
@@ -522,6 +530,42 @@ describe("DutchAuction", function () {
           .to.be.revertedWithCustomError(auction, "InvalidStartEndTime")
           .withArgs(startTime, endTime);
       });
+
+      it("should bid and getUserData returns properly", async () => {
+        const deadline = Math.floor(Date.now() / 1000) + 300;
+        const qty = 5;
+        const signature = await getSignature(alice.address, deadline, qty);
+        const tx = await auction
+          .connect(alice)
+          .bid(qty, deadline, signature, { value: startAmount.mul(qty) });
+
+        await expect(tx).to.emit(auction, "Bid");
+        const receipt = await tx.wait();
+        const event = receipt?.events?.find((event) => event.event === "Bid");
+        const finalPrice = event?.args?.price;
+        const userData = await auction.getUserData(alice.address)
+
+        expect(userData.contribution).to.eq(finalPrice.mul(qty))
+        expect(userData.tokensBidded).to.eq(qty)
+        expect(userData.refundClaimed).to.be.false
+      });
+
+      it("should bid twice and getUserData returns properly", async () => {
+        const deadline = Math.floor(Date.now() / 1000) + 3 * 3600;
+        const value = startAmount.mul(5);
+        const qty1 = 5;
+        const qty2 = 2;
+        await increaseTime(3600);
+        const finalPrice1 = await makeBid(alice, deadline, qty1, value, true); // 1.4 x 5 = 7
+        await increaseTime(30 * 60);
+        const finalPrice2 = await makeBid(alice, deadline, qty2, value, true); // 1.1 x 2 = 2.2
+        const userData = await auction.getUserData(alice.address)
+
+        expect(userData.contribution).to.eq(finalPrice1.mul(qty1).add(finalPrice2.mul(qty2)))
+        expect(userData.tokensBidded).to.eq(qty1 + qty2)
+        expect(userData.refundClaimed).to.be.false
+      });
+
     });
   });
 
