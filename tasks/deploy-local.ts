@@ -1,4 +1,5 @@
 import { task } from 'hardhat/config'
+import fs from 'fs'
 import { Contract as EthersContract } from 'ethers'
 
 type LocalContractName = 'MockNFT' | 'DutchAuction'
@@ -54,6 +55,24 @@ task('deploy-local', 'Deploy contracts to hardhat').setAction(
       console.log(`${name} contract deployed to ${deployedContract.address}`)
     }
 
+    
+    console.log('Writting logs')
+    if (!fs.existsSync('logs')) {
+      fs.mkdirSync('logs')
+      console.log('Created logs folder')
+    }
+    fs.writeFileSync(
+      `logs/deploy-${network.chainId}.json`,
+      JSON.stringify({
+        contractAddresses: {
+          MockNFT: contracts.MockNFT.instance?.address,
+          DutchAuction: contracts.DutchAuction.instance?.address,
+        },
+      }, null, 2),
+      { flag: 'w' }
+    )
+
+    console.log('Address wrote on file')
     return contracts
   }
 )
