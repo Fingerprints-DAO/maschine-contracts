@@ -804,7 +804,9 @@ describe("DutchAuction", function () {
   });
 
   describe("Withdraw Funds", () => {
+    let contractBalanceBefore = BigNumber.from(0);
     beforeEach(async () => {
+      contractBalanceBefore = await ethers.provider.getBalance(auction.address)
       await auction
         .connect(admin)
         .setConfig(
@@ -815,7 +817,6 @@ describe("DutchAuction", function () {
           startTime,
           endTime
         );
-
       const deadline1 = Math.floor(Date.now() / 1000) + 300;
       const qty1 = 5;
       await makeBid(alice, deadline1, qty1, startAmount.mul(qty1));
@@ -850,6 +851,18 @@ describe("DutchAuction", function () {
         beforeBalance.add(settledPrice.mul(8)),
         ethers.utils.parseEther("0.01")
       );
+    });
+
+    it("should have 0 eth after withdraw funds and refund users", async () => {
+      await increaseTime(3600 * 2 + 30 * 60);
+      const tx = await auction
+        .connect(admin)
+        .refundUsers([alice.address, bob.address]);
+      await expect(tx).to.emit(auction, "ClaimRefund");
+
+      await auction.connect(admin).withdrawFunds();
+      const afterBalance = await ethers.provider.getBalance(auction.address);
+      expect(afterBalance).to.be.eq(contractBalanceBefore);
     });
 
     it("should fail to withdraw funds twice", async () => {
