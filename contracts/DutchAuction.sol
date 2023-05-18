@@ -190,6 +190,13 @@ contract DutchAuction is
         return _config;
     }
 
+    /// @notice Get user data
+    /// @param user User address
+    /// @return User struct
+    function getUserData(address user) external view returns (User memory) {
+        return _userData[user];
+    }
+
     /// @notice Get auction's settled price
     /// @return price Auction's settled price
     function getSettledPriceInWei() external view returns (uint256) {
