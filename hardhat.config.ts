@@ -1,6 +1,7 @@
 import { HardhatUserConfig } from "hardhat/config";
 import "@nomicfoundation/hardhat-toolbox";
 import "hardhat-gas-reporter";
+import 'hardhat-watcher'
 import * as dotenv from "dotenv";
 import './tasks';
 
@@ -34,6 +35,15 @@ const config: HardhatUserConfig = {
   },
   etherscan: {
     apiKey: process.env.ETHERSCAN_API_KEY,
+  },
+  watcher: {
+    test: {
+      tasks: [{ command: 'test', params: { testFiles: ['{path}'] } }],
+      files: ['./test/**/*'],
+      verbose: false,
+      clearOnStart: true,
+      runOnLaunch: false,
+    },
   },
 };
 

@@ -22,6 +22,7 @@
     "chai": "^4.2.0",
     "hardhat": "^2.14.0",
     "hardhat-gas-reporter": "^1.0.8",
+    "hardhat-watcher": "^2.5.0",
     "solidity-coverage": "^0.8.1",
     "ts-node": "^10.9.1",
     "typechain": "^8.1.0",
