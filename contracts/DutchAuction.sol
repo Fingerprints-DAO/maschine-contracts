@@ -359,7 +359,7 @@ contract DutchAuction is
         nonReentrant
         onlyRole(DEFAULT_ADMIN_ROLE)
     {
-        if (_config.endTime > block.timestamp) revert NotEnded();
+        if (_config.endTime >= block.timestamp) revert NotEnded();
         if (_withdrawn) revert AlreadyWithdrawn();
         _withdrawn = true;
 
@@ -371,7 +371,7 @@ contract DutchAuction is
     /// @notice Claim refund payment
     function claimRefund() external nonReentrant whenNotPaused validConfig {
         Config memory config = _config;
-        if (config.endTime + config.refundDelayTime > block.timestamp)
+        if (config.endTime + config.refundDelayTime >= block.timestamp)
             revert ClaimRefundNotReady();
 
         _claimRefund(msg.sender);
@@ -389,7 +389,7 @@ contract DutchAuction is
         onlyRole(DEFAULT_ADMIN_ROLE)
     {
         Config memory config = _config;
-        if (config.endTime + config.refundDelayTime > block.timestamp)
+        if (config.endTime + config.refundDelayTime >= block.timestamp)
             revert ClaimRefundNotReady();
 
         uint256 length = accounts.length;
