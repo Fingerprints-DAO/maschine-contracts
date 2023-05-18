@@ -2,7 +2,12 @@ import { ethers } from "hardhat";
 
 async function main() {
   const DutchAuction = await ethers.getContractFactory("DutchAuction");
-  const auction = DutchAuction.attach("AUCTION_CONTRACT_ADDRESS"); // TODO: insert auction contract address here
+  if (!process?.env?.AUCTION_ADDRESS) {
+    console.error('AUCTION_ADDRESS is not defined')
+    return;
+  }
+
+  const auction = DutchAuction.attach(process.env.AUCTION_ADDRESS); 
 
   const startAmount = ethers.utils.parseEther("5");       // Start amount: 5E
   const endAmount = ethers.utils.parseEther("0.2");       // End amount: 0.2E

@@ -2,9 +2,20 @@ import { ethers } from "hardhat";
 
 async function main() {
   const DutchAuction = await ethers.getContractFactory("DutchAuction");
+  if (
+    !(
+      process?.env?.NFT_ADDRESS &&
+      process?.env?.SIGNER_ADDRESS &&
+      process?.env?.VAULT_ADDRESS
+    )
+  ) {
+    console.error("missing env addresses");
+    return;
+  }
   const auction = await DutchAuction.deploy(
-    "NFT_ADDRESS", // TODO: replace this with actual NFT contract address
-    "SIGNER_ADDRESS" // TODO: replace this with actual signer address
+    process.env.NFT_ADDRESS,
+    process.env.SIGNER_ADDRESS,
+    process.env.VAULT_ADDRESS
   );
 
   await auction.deployed();

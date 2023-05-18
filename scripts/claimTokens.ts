@@ -2,9 +2,14 @@ import { ethers } from "hardhat";
 
 async function main() {
   const DutchAuction = await ethers.getContractFactory("DutchAuction");
-  const auction = DutchAuction.attach("AUCTION_CONTRACT_ADDRESS"); // TODO: insert auction contract address here
+  if (!process?.env?.AUCTION_ADDRESS) {
+    console.error('AUCTION_ADDRESS is not defined')
+    return;
+  }
 
-  const tx = await auction.claimTokens();
+  const auction = DutchAuction.attach(process.env.AUCTION_ADDRESS); 
+
+  const tx = await auction.claimTokens(1);
   console.log(`Claim Tokens TX submitted: ${tx.hash}`);
   await tx.wait();
   console.log("Claim Tokens Success!");
