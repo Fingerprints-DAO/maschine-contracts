@@ -264,7 +264,7 @@ contract DutchAuction is
         bytes memory signature
     ) external payable nonReentrant whenNotPaused validConfig validTime {
         if (block.timestamp > deadline) revert BidExpired(deadline);
-        if (qty == 0) revert InvalidQuantity();
+        if (qty < 1) revert InvalidQuantity();
 
         bytes32 hashStruct = keccak256(
             abi.encode(
