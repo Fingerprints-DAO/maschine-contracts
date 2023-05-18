@@ -18,6 +18,7 @@ interface IDutchAuction {
     error PurchaseLimitReached();
     error ClaimRefundNotReady();
     error NothingToClaim();
+    error AlreadyWithdrawn();
 
     struct User {
         uint216 contribution; // cumulative sum of Wei bids

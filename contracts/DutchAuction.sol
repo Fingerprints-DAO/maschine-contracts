@@ -37,6 +37,9 @@ contract DutchAuction is
     /// @dev Total minted tokens
     uint32 private _totalMinted;
 
+    /// @dev Funds withdrawn or not
+    bool private _withdrawn;
+
     /// @dev Mapping of user address to User data
     mapping(address => User) private _userData;
 
@@ -357,6 +360,8 @@ contract DutchAuction is
         onlyRole(DEFAULT_ADMIN_ROLE)
     {
         if (_config.endTime > block.timestamp) revert NotEnded();
+        if (_withdrawn) revert AlreadyWithdrawn();
+        _withdrawn = true;
 
         uint256 amount = _totalMinted * _settledPriceInWei;
         (bool success, ) = treasuryAddress.call{value: amount}("");

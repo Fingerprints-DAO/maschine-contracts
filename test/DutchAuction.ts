@@ -437,7 +437,9 @@ describe("DutchAuction", function () {
         const qty = 0;
         const signature = await getSignature(alice.address, deadline, qty);
         await expect(
-          auction.connect(alice).bid(qty, deadline, signature, { value: startAmount.mul(qty) })
+          auction
+            .connect(alice)
+            .bid(qty, deadline, signature, { value: startAmount.mul(qty) })
         ).to.be.revertedWithCustomError(auction, "InvalidQuantity");
       });
 
@@ -804,6 +806,14 @@ describe("DutchAuction", function () {
         beforeBalance.add(settledPrice.mul(8)),
         ethers.utils.parseEther("0.01")
       );
+    });
+
+    it("should fail to withdraw funds twice", async () => {
+      await increaseTime(2 * 3600);
+      await auction.connect(admin).withdrawFunds();
+      await expect(
+        auction.connect(admin).withdrawFunds()
+      ).to.be.revertedWithCustomError(auction, "AlreadyWithdrawn");
     });
   });
 });
