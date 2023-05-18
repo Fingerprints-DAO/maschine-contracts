@@ -288,11 +288,6 @@ contract DutchAuction is
         uint256 price = getCurrentPriceInWei();
         uint256 payment = qty * price;
         if (msg.value < payment) revert NotEnoughValue();
-        if (msg.value > payment) {
-            uint256 refundInWei = msg.value - payment;
-            (bool success, ) = msg.sender.call{value: refundInWei}("");
-            if (!success) revert TransferFailed();
-        }
 
         User storage bidder = _userData[msg.sender]; // get user's current bid total
         bidder.contribution = bidder.contribution + uint216(payment);
@@ -308,6 +303,11 @@ contract DutchAuction is
             _settledPriceInWei = price;
         }
 
+        if (msg.value > payment) {
+            uint256 refundInWei = msg.value - payment;
+            (bool success, ) = msg.sender.call{value: refundInWei}("");
+            if (!success) revert TransferFailed();
+        }
         // mint tokens to user
         _mintTokens(msg.sender, qty);
 
