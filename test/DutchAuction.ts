@@ -432,6 +432,15 @@ describe("DutchAuction", function () {
         ).to.be.revertedWithCustomError(auction, "NotEnoughValue");
       });
 
+      it("should fail to bid 0 quantity", async () => {
+        const deadline = Math.floor(Date.now() / 1000) + 300;
+        const qty = 0;
+        const signature = await getSignature(alice.address, deadline, qty);
+        await expect(
+          auction.connect(alice).bid(qty, deadline, signature, { value: startAmount.mul(qty) })
+        ).to.be.revertedWithCustomError(auction, "InvalidQuantity");
+      });
+
       it("should bid", async () => {
         const deadline = Math.floor(Date.now() / 1000) + 300;
         const nonce = await auction.getNonce(alice.address);

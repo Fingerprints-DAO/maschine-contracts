@@ -6,6 +6,7 @@ interface IDutchAuction {
     error ConfigAlreadySet();
     error InvalidAmountInWei();
     error InvalidStartEndTime(uint64 startTime, uint64 endTime);
+    error InvalidQuantity();
     error NotEnded();
     error NotEnoughValue();
     error NotRefundable();
