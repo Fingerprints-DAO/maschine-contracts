@@ -25,6 +25,9 @@ contract DutchAuction is
     /// @notice Signer address
     address public signerAddress;
 
+    /// @notice Treasury address that will receive funds
+    address public treasuryAddress;
+
     /// @dev Settled Price in wei
     uint256 private _settledPriceInWei;
 
@@ -57,9 +60,15 @@ contract DutchAuction is
     /// @notice DutchAuction Constructor
     /// @param _nftAddress NFT contract address
     /// @param _signerAddress Signer address
-    constructor(address _nftAddress, address _signerAddress) {
+    /// @param _treasuryAddress Treasury address
+    constructor(
+        address _nftAddress,
+        address _signerAddress,
+        address _treasuryAddress
+    ) {
         nftContractAddress = INFT(_nftAddress);
         signerAddress = _signerAddress;
+        treasuryAddress = _treasuryAddress;
 
         _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
 
@@ -124,8 +133,13 @@ contract DutchAuction is
      *
      * @param newAddress The address of the new NFT contract.
      */
-    function setNftContractAddress(address newAddress) external onlyRole(DEFAULT_ADMIN_ROLE) {
-        require(newAddress != address(0), "Invalid address: zero address not allowed");
+    function setNftContractAddress(
+        address newAddress
+    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        require(
+            newAddress != address(0),
+            "Invalid address: zero address not allowed"
+        );
         nftContractAddress = INFT(newAddress);
     }
 
@@ -138,9 +152,26 @@ contract DutchAuction is
      *
      * @param newAddress The address of the new signer.
      */
-    function setSignerAddress(address newAddress) external onlyRole(DEFAULT_ADMIN_ROLE) {
-        require(newAddress != address(0), "Invalid address: zero address not allowed");
+    function setSignerAddress(
+        address newAddress
+    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        require(
+            newAddress != address(0),
+            "Invalid address: zero address not allowed"
+        );
         signerAddress = newAddress;
+    }
+
+    /// @notice Sets treasury address
+    /// @param _treasuryAddress New treasury address
+    function setTreasuryAddress(
+        address _treasuryAddress
+    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        require(
+            _treasuryAddress != address(0),
+            "Invalid address: zero address not allowed"
+        );
+        treasuryAddress = _treasuryAddress;
     }
 
     /// @notice Pause the auction
@@ -281,7 +312,8 @@ contract DutchAuction is
         User storage bidder = _userData[user]; // get user's current bid total
         uint256 price = getCurrentPriceInWei();
         claimable = uint32(bidder.contribution / price) - bidder.tokensBidded;
-        uint32 available = nftContractAddress.tokenTokenIdMax() - uint16(nftContractAddress.currentTokenId());
+        uint32 available = nftContractAddress.tokenTokenIdMax() -
+            uint16(nftContractAddress.currentTokenId());
         if (claimable > available) claimable = available;
     }
 
@@ -319,7 +351,7 @@ contract DutchAuction is
         if (_config.endTime > block.timestamp) revert NotEnded();
 
         uint256 amount = _totalMinted * _settledPriceInWei;
-        (bool success, ) = msg.sender.call{value: amount}("");
+        (bool success, ) = treasuryAddress.call{value: amount}("");
         if (!success) revert TransferFailed();
     }
 

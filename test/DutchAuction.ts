@@ -14,6 +14,7 @@ describe("DutchAuction", function () {
   let alice: SignerWithAddress;
   let bob: SignerWithAddress;
   let signer: SignerWithAddress;
+  let treasury: SignerWithAddress;
   let defaultAdminRole: string;
   let startAmount: BigNumber;
   let endAmount: BigNumber;
@@ -49,13 +50,17 @@ describe("DutchAuction", function () {
   };
 
   before("Deploy", async () => {
-    [admin, alice, bob, signer] = await ethers.getSigners();
+    [admin, alice, bob, signer, treasury] = await ethers.getSigners();
 
     const MockNFT = await ethers.getContractFactory("MockNFT");
     nft = await MockNFT.deploy();
 
     const Auction = await ethers.getContractFactory("DutchAuction");
-    auction = await Auction.deploy(nft.address, signer.address);
+    auction = await Auction.deploy(
+      nft.address,
+      signer.address,
+      treasury.address
+    );
 
     const minterRole = await nft.MINTER_ROLE();
     await nft.connect(admin).grantRole(minterRole, auction.address);
@@ -210,35 +215,67 @@ describe("DutchAuction", function () {
   describe("setNftContractAddress", function () {
     it("should set the NFT contract address", async function () {
       const newAddress = "0x1234567890123456789012345678901234567890";
-      await expect(auction.connect(admin).setNftContractAddress(newAddress)).to.not.be.reverted;
+      await expect(auction.connect(admin).setNftContractAddress(newAddress)).to
+        .not.be.reverted;
       expect(await auction.nftContractAddress()).to.equal(newAddress);
     });
 
     it("should revert if called by non-admin", async function () {
       const newAddress = "0x1234567890123456789012345678901234567890";
-      await expect(auction.connect(alice).setNftContractAddress(newAddress)).to.be.revertedWith(/AccessControl/);
+      await expect(
+        auction.connect(alice).setNftContractAddress(newAddress)
+      ).to.be.revertedWith(/AccessControl/);
     });
 
     it("should revert if new address is zero", async function () {
-      await expect(auction.connect(admin).setNftContractAddress(ethers.constants.AddressZero)).to.be.revertedWith(/zero address not allowed/);
+      await expect(
+        auction
+          .connect(admin)
+          .setNftContractAddress(ethers.constants.AddressZero)
+      ).to.be.revertedWith(/zero address not allowed/);
     });
   });
-
 
   describe("setSigner", function () {
     it("should set the signer address", async function () {
       const newAddress = "0x1234567890123456789012345678901234567890";
-      await expect(auction.connect(admin).setSignerAddress(newAddress)).to.not.be.reverted;
+      await expect(auction.connect(admin).setSignerAddress(newAddress)).to.not
+        .be.reverted;
       expect(await auction.signerAddress()).to.equal(newAddress);
     });
 
     it("should revert if called by non-admin", async function () {
       const newAddress = "0x1234567890123456789012345678901234567890";
-      await expect(auction.connect(alice).setSignerAddress(newAddress)).to.be.revertedWith(/AccessControl/);
+      await expect(
+        auction.connect(alice).setSignerAddress(newAddress)
+      ).to.be.revertedWith(/AccessControl/);
     });
 
     it("should revert if new address is zero", async function () {
-      await expect(auction.connect(admin).setSignerAddress(ethers.constants.AddressZero)).to.be.revertedWith(/zero address not allowed/);
+      await expect(
+        auction.connect(admin).setSignerAddress(ethers.constants.AddressZero)
+      ).to.be.revertedWith(/zero address not allowed/);
+    });
+  });
+
+  describe("Set Treasury", () => {
+    it("should fail to set treasury as non-admin", async () => {
+      await expect(
+        auction.connect(alice).setTreasuryAddress(bob.address)
+      ).to.be.revertedWith(
+        `AccessControl: account ${alice.address.toLowerCase()} is missing role ${defaultAdminRole}`
+      );
+    });
+
+    it("should revert if new address is zero", async function () {
+      await expect(
+        auction.connect(admin).setTreasuryAddress(ethers.constants.AddressZero)
+      ).to.be.revertedWith(/zero address not allowed/);
+    });
+
+    it("should set treasury", async () => {
+      await auction.connect(admin).setTreasuryAddress(bob.address);
+      expect(await auction.treasuryAddress()).to.be.eq(bob.address);
     });
   });
 
@@ -751,9 +788,9 @@ describe("DutchAuction", function () {
     it("should withdraw funds", async () => {
       await increaseTime(2 * 3600);
       const settledPrice = await auction.getSettledPriceInWei();
-      const beforeBalance = await ethers.provider.getBalance(admin.address);
+      const beforeBalance = await ethers.provider.getBalance(treasury.address);
       await auction.connect(admin).withdrawFunds();
-      const afterBalance = await ethers.provider.getBalance(admin.address);
+      const afterBalance = await ethers.provider.getBalance(treasury.address);
       expect(afterBalance).to.be.closeTo(
         beforeBalance.add(settledPrice.mul(8)),
         ethers.utils.parseEther("0.01")
