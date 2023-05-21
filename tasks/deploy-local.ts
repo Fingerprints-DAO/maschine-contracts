@@ -11,68 +11,73 @@ interface Contract {
   waitForConfirmation?: boolean
 }
 
-task('deploy-local', 'Deploy contracts to hardhat').setAction(
-  async (_, { ethers }) => {
-    const network = await ethers.provider.getNetwork()
-    if (network.chainId !== 31337) {
-      console.log(`Invalid chain id. Expected 31337. Got: ${network.chainId}.`)
-      return
-    }
-
-    const [deployer] = await ethers.getSigners()
-    await deployer.getTransactionCount()
-
-    const contracts: Record<LocalContractName, Contract> = {
-      MockNFT: {
-        args: [],
-      },
-      DutchAuction: {
-        args: [
-            () => contracts.MockNFT?.instance?.address,
-            deployer.address,
-        ],
-      },
-    }
-
-    for (const [name, contract] of Object.entries(contracts)) {
-      const factory = await ethers.getContractFactory(name, {
-        libraries: contract?.libraries?.(),
-      })
-
-      let deployedContract: EthersContract
-
-      deployedContract = await factory.deploy(
-        ...(contract.args?.map((a) => (typeof a === 'function' ? a() : a)) ??
-          [])
-      )
-
-      if (contract.waitForConfirmation) {
-        await deployedContract.deployed()
+task('deploy-local', 'Deploy contracts to hardhat')
+  .addOptionalParam('erc721Address', '', process.env.ERC721_ADDRESS)
+  .addOptionalParam('signerAddress', '', process.env.SIGNER_ADDRESS)
+  .addOptionalParam('vaultAddress', '', process.env.VAULT_ADDRESS)
+  .setAction(
+    async ({erc721Address, signerAddress, vaultAddress}, { ethers }) => {
+      const network = await ethers.provider.getNetwork()
+      if (network.chainId !== 31337) {
+        console.log(`Invalid chain id. Expected 31337. Got: ${network.chainId}.`)
+        return
       }
 
-      contracts[name as LocalContractName].instance = deployedContract
+      const [deployer] = await ethers.getSigners()
+      await deployer.getTransactionCount()
 
-      console.log(`${name} contract deployed to ${deployedContract.address}`)
-    }
-
-    
-    console.log('Writting logs')
-    if (!fs.existsSync('logs')) {
-      fs.mkdirSync('logs')
-      console.log('Created logs folder')
-    }
-    fs.writeFileSync(
-      `logs/deploy-${network.chainId}.json`,
-      JSON.stringify({
-        contractAddresses: {
-          MockNFT: contracts.MockNFT.instance?.address,
-          DutchAuction: contracts.DutchAuction.instance?.address,
+      const contracts: Record<LocalContractName, Contract> = {
+        MockNFT: {
+          args: [],
         },
-      }, null, 2),
-      { flag: 'w' }
-    )
+        DutchAuction: {
+          args: [
+              () => erc721Address || contracts.MockNFT?.instance?.address,
+              signerAddress || deployer.address,
+              vaultAddress || deployer.address,
+          ],
+        },
+      }
 
-    console.log('Address wrote on file')
-    return contracts
-  }
-)
+      for (const [name, contract] of Object.entries(contracts)) {
+        const factory = await ethers.getContractFactory(name, {
+          libraries: contract?.libraries?.(),
+        })
+
+        let deployedContract: EthersContract
+
+        deployedContract = await factory.deploy(
+          ...(contract.args?.map((a) => (typeof a === 'function' ? a() : a)) ??
+            [])
+        )
+
+        if (contract.waitForConfirmation) {
+          await deployedContract.deployed()
+        }
+
+        contracts[name as LocalContractName].instance = deployedContract
+
+        console.log(`${name} contract deployed to ${deployedContract.address}`)
+      }
+
+      
+      console.log('Writting logs')
+      if (!fs.existsSync('logs')) {
+        fs.mkdirSync('logs')
+        console.log('Created logs folder')
+      }
+      fs.writeFileSync(
+        `logs/deploy-${network.chainId}.json`,
+        JSON.stringify({
+          contractAddresses: {
+            MockNFT: contracts.MockNFT.instance?.address,
+            DutchAuction: contracts.DutchAuction.instance?.address,
+          },
+        }, null, 2),
+        { flag: 'w' }
+      )
+
+      console.log('Address wrote on file')
+      return contracts
+    }
+  )

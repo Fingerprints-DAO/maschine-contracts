@@ -4,7 +4,7 @@ task(
   'set-mint-address',
   'Change erc721 address'
 )
-    .addParam('contractAddress', 'ERC721 contract address', null, types.string)
+    .addOptionalParam('contractAddress', 'ERC721 contract address', process.env.ERC721_ADDRESS, types.string)
     .setAction(async ({ contractAddress }, { ethers }) => {
         const { chainId } = await ethers.provider.getNetwork()
         const { contractAddresses: { DutchAuction } } = require(`../logs/deploy-${chainId}.json`);
