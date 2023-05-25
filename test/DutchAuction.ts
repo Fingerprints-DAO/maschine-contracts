@@ -4,11 +4,11 @@ import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { signBid } from "./helpers/sign";
 import { takeSnapshot, revertToSnapshot } from "./helpers/snapshot";
 import { increaseTime } from "./helpers/time";
-import { DutchAuction, MockNFT } from "../typechain-types";
+import { DutchAuction, Maschine } from "../typechain-types";
 import { BigNumber } from "ethers";
 
 describe("DutchAuction", function () {
-  let nft: MockNFT;
+  let nft: Maschine;
   let auction: DutchAuction;
   let admin: SignerWithAddress;
   let alice: SignerWithAddress;
@@ -60,8 +60,13 @@ describe("DutchAuction", function () {
   before("Deploy", async () => {
     [admin, alice, bob, signer, treasury] = await ethers.getSigners();
 
-    const MockNFT = await ethers.getContractFactory("MockNFT");
-    nft = await MockNFT.deploy();
+    const Maschine = await ethers.getContractFactory("Maschine");
+    nft = await Maschine.deploy(
+      treasury.address,
+      admin.address,
+      20,
+      "https://m.harm.work/tokens/"
+    );
 
     const Auction = await ethers.getContractFactory("DutchAuction");
     auction = await Auction.deploy(
@@ -70,8 +75,7 @@ describe("DutchAuction", function () {
       treasury.address
     );
 
-    const minterRole = await nft.MINTER_ROLE();
-    await nft.connect(admin).grantRole(minterRole, auction.address);
+    await nft.setMinterAddress(auction.address);
 
     defaultAdminRole = await auction.DEFAULT_ADMIN_ROLE();
 
