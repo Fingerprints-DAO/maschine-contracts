@@ -285,6 +285,12 @@ contract DutchAuction is
         address recoveredSigner = ECDSA.recover(hash, signature);
         if (signerAddress != recoveredSigner) revert InvalidSignature();
 
+        uint32 available = nftContractAddress.tokenTokenIdMax() -
+            uint16(nftContractAddress.currentTokenId());
+        if (qty > available) {
+            revert MaxSupplyReached();
+        }
+
         uint256 price = getCurrentPriceInWei();
         uint256 payment = qty * price;
         if (msg.value < payment) revert NotEnoughValue();

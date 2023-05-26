@@ -399,6 +399,18 @@ describe("DutchAuction", function () {
           );
       });
 
+      it("should fail to bid when nft contract paused", async () => {
+        await nft.connect(admin).pause();
+        const deadline = Math.floor(Date.now() / 1000) + 1000;
+        const qty = 5;
+        const signature = await getSignature(alice.address, deadline, qty);
+        await expect(
+          auction
+            .connect(alice)
+            .bid(qty, deadline, signature, { value: startAmount.mul(qty) })
+        ).to.be.revertedWith("Pausable: paused");
+      });
+
       it("should fail to bid when paused", async () => {
         await auction.connect(admin).pause();
         const deadline = Math.floor(Date.now() / 1000) + 1000;
@@ -478,6 +490,17 @@ describe("DutchAuction", function () {
         await makeBid(alice, deadline, 2, value); // 1.1 x 2 = 2.2
         await increaseTime(30 * 60);
         await makeBid(alice, deadline, 1, value); // 0.8 x 1 = 0.8
+      });
+
+      it("should fail to bid when nft total supply reached", async () => {
+        const deadline = Math.floor(Date.now() / 1000) + 3 * 3600;
+        const value = startAmount.mul(5);
+        await increaseTime(3600 * 2);
+        await makeBid(alice, deadline, 10, value); // 0.8 x 10 = 8
+        const signature = await getSignature(alice.address, deadline, 1);
+        await expect(
+          auction.connect(alice).bid(1, deadline, signature, { value })
+        ).to.be.revertedWithCustomError(auction, "MaxSupplyReached");
       });
 
       it("should fail to bid when limit reached", async () => {
