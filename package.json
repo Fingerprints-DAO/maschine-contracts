@@ -10,6 +10,7 @@
     "compile": "hardhat compile"
   },
   "devDependencies": {
+    "@faker-js/faker": "^8.0.1",
     "@nomicfoundation/hardhat-chai-matchers": "^1.0.0",
     "@nomicfoundation/hardhat-network-helpers": "^1.0.0",
     "@nomicfoundation/hardhat-toolbox": "^2.0.2",
@@ -20,6 +21,7 @@
     "@types/chai": "^4.2.0",
     "@types/mocha": ">=9.1.0",
     "chai": "^4.2.0",
+    "dayjs": "^1.11.7",
     "hardhat": "^2.14.0",
     "hardhat-gas-reporter": "^1.0.8",
     "hardhat-watcher": "^2.5.0",
