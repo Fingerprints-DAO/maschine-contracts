@@ -18,13 +18,13 @@ task(
 
   const contracts = await run("deploy-local");
 
-  await Promise.all([
-    // run('mint-nfts', {
-    //   erc721Mock: contracts.MockNFT.instance.address,
-    //   mintTo: DAOVault.address,
-    //   qty: 100,
-    // }),
-  ]);
+  // await Promise.all([
+  //   // run('mint-nfts', {
+  //   //   erc721Mock: contracts.MockNFT.instance.address,
+  //   //   mintTo: DAOVault.address,
+  //   //   qty: 100,
+  //   // }),
+  // ]);
 
   console.log(
     `Maschine contracts deployed to local node at http://localhost:8545 (Chain ID: ${chainId})`
@@ -41,6 +41,9 @@ task(
     DutchAuction: contracts.DutchAuction.instance.address,
   });
 
+  await run("set-minter-address", {
+    contractAddress: contracts.DutchAuction.instance.address,
+  });
   await run("set-config");
 
   await new Promise(() => {
