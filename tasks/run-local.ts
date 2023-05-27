@@ -29,7 +29,7 @@ task(
   console.log(
     `Maschine contracts deployed to local node at http://localhost:8545 (Chain ID: ${chainId})`
   );
-  console.log(`ERC721 MockNFT address: ${contracts.MockNFT.instance.address}`);
+  console.log(`ERC721 MockNFT address: ${contracts.Maschine.instance.address}`);
 
   console.log(
     `Maschine DutchAuction address: ${contracts.DutchAuction.instance.address}`
@@ -37,7 +37,7 @@ task(
   await ethers.provider.send("evm_setIntervalMining", [12_000]);
 
   console.table({
-    MockNFT: contracts.MockNFT.instance.address,
+    Maschine: contracts.Maschine.instance.address,
     DutchAuction: contracts.DutchAuction.instance.address,
   });
 

@@ -44,11 +44,13 @@ describe("DutchAuction", function () {
     deadline: number,
     qty: number,
     value: BigNumber,
-    returnPrice = false,
+    returnPrice = false
   ) => {
     const signature = await getSignature(user.address, deadline, qty);
-    const tx = await auction.connect(user).bid(qty, deadline, signature, { value });
-    
+    const tx = await auction
+      .connect(user)
+      .bid(qty, deadline, signature, { value });
+
     if (returnPrice) {
       const receipt = await tx.wait();
       const event = receipt?.events?.find((event) => event.event === "Bid");
@@ -75,7 +77,7 @@ describe("DutchAuction", function () {
       treasury.address
     );
 
-    await nft.setMinterAddress(auction.address);
+    await nft.connect(admin).setMinterAddress(auction.address);
 
     defaultAdminRole = await auction.DEFAULT_ADMIN_ROLE();
 
@@ -497,7 +499,9 @@ describe("DutchAuction", function () {
         const value = startAmount.mul(5);
         await increaseTime(3600 * 2);
         await makeBid(alice, deadline, 10, value); // 0.8 x 10 = 8
+        await makeBid(bob, deadline, 10, value); // 0.8 x 10 = 8
         const signature = await getSignature(alice.address, deadline, 1);
+
         await expect(
           auction.connect(alice).bid(1, deadline, signature, { value })
         ).to.be.revertedWithCustomError(auction, "MaxSupplyReached");
@@ -570,11 +574,11 @@ describe("DutchAuction", function () {
         const receipt = await tx.wait();
         const event = receipt?.events?.find((event) => event.event === "Bid");
         const finalPrice = event?.args?.price;
-        const userData = await auction.getUserData(alice.address)
+        const userData = await auction.getUserData(alice.address);
 
-        expect(userData.contribution).to.eq(finalPrice.mul(qty))
-        expect(userData.tokensBidded).to.eq(qty)
-        expect(userData.refundClaimed).to.be.false
+        expect(userData.contribution).to.eq(finalPrice.mul(qty));
+        expect(userData.tokensBidded).to.eq(qty);
+        expect(userData.refundClaimed).to.be.false;
       });
 
       it("should bid twice and getUserData returns properly", async () => {
@@ -586,13 +590,14 @@ describe("DutchAuction", function () {
         const finalPrice1 = await makeBid(alice, deadline, qty1, value, true); // 1.4 x 5 = 7
         await increaseTime(30 * 60);
         const finalPrice2 = await makeBid(alice, deadline, qty2, value, true); // 1.1 x 2 = 2.2
-        const userData = await auction.getUserData(alice.address)
+        const userData = await auction.getUserData(alice.address);
 
-        expect(userData.contribution).to.eq(finalPrice1.mul(qty1).add(finalPrice2.mul(qty2)))
-        expect(userData.tokensBidded).to.eq(qty1 + qty2)
-        expect(userData.refundClaimed).to.be.false
+        expect(userData.contribution).to.eq(
+          finalPrice1.mul(qty1).add(finalPrice2.mul(qty2))
+        );
+        expect(userData.tokensBidded).to.eq(qty1 + qty2);
+        expect(userData.refundClaimed).to.be.false;
       });
-
     });
   });
 
@@ -833,7 +838,7 @@ describe("DutchAuction", function () {
   describe("Withdraw Funds", () => {
     let contractBalanceBefore = BigNumber.from(0);
     beforeEach(async () => {
-      contractBalanceBefore = await ethers.provider.getBalance(auction.address)
+      contractBalanceBefore = await ethers.provider.getBalance(auction.address);
       await auction
         .connect(admin)
         .setConfig(
