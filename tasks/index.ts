@@ -5,3 +5,4 @@ export * from "./set-nft-address";
 export * from "./set-minter-address";
 export * from "./set-config";
 export * from "./log-addresses";
+export * from "./deploy";

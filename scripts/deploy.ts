@@ -4,7 +4,7 @@ async function main() {
   const DutchAuction = await ethers.getContractFactory("DutchAuction");
   if (
     !(
-      process?.env?.NFT_ADDRESS &&
+      process?.env?.ERC721_ADDRESS &&
       process?.env?.SIGNER_ADDRESS &&
       process?.env?.VAULT_ADDRESS
     )
@@ -13,7 +13,7 @@ async function main() {
     return;
   }
   const auction = await DutchAuction.deploy(
-    process.env.NFT_ADDRESS,
+    process.env.ERC721_ADDRESS,
     process.env.SIGNER_ADDRESS,
     process.env.VAULT_ADDRESS
   );
