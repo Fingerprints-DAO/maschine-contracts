@@ -6,3 +6,6 @@ export * from "./set-minter-address";
 export * from "./set-config";
 export * from "./log-addresses";
 export * from "./deploy";
+export * from "./log-price";
+export * from "./log-info";
+export * from "./mint";

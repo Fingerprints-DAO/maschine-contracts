@@ -23,7 +23,7 @@ contract Maschine is
   address public payoutAddress;
   address public minterContractAddress;
 
-  uint96 public constant royaltyFee = 750; // 7.5%
+  uint96 public constant royaltyFee = 850; // 8.5%
 
   constructor(
     address _payoutAddress,
