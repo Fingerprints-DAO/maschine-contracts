@@ -3,7 +3,7 @@
   "scripts": {
     "run:node": "hardhat node",
     "test:watch": "hardhat watch test",
-    "deploy:testnet": "hardhat deploy --network base-goerli",
+    "deploy:testnet": "hardhat deploy --network goerli",
     "task:run-local": "hardhat run-local",
     "coverage": "TS_NODE_TRANSPILE_ONLY=1 HARDHAT_DEPLOY_FIXTURE=true CONTRACT_SIZER_STRICT_DISABLE=true hardhat coverage --solcoverjs ./.solcover.js",
     "run:docs": "hardhat compile",

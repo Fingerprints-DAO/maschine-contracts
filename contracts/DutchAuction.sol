@@ -1,4 +1,38 @@
-// SPDX-License-Identifier: MIT
+// (@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+// (@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+// (@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ @@ (@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+// (@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@&, @@@@@@@@@% .&@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+// (@@@@@@@@@@@@@@@@@@@@@@@@@@@ /&@@@@@@ %@ @@&@@@@% @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+// (@@@@@@@@@@@@@@@@@@@@@@@@@&    @@@&/      .&@@&.   @@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+// (@@@@@@@@@@@@@@@@@@@@@@@@@&                        @@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+// (@@@@@@@@@@@@@@@@@@@@@@@@@&                        &@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+// (@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@    ,%@@@@&/    (&@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+// (@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@&&&&@@@@@@@@@@@@@@
+// (@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@   @@@@@@@@@@@@@@
+// (&&&&&&&&&@&%@@&&@&&&@&@&&&&&&@%@@&@@@@@@@&@@@&@@@@@@@&@&@@@&@@   @@@@@@@@@@@@@@
+// (&&&&&&&&&           &@@            .@@*         *@@@&        .   @@@@@@@@@@@@@@
+// (&&&&&&&&   @&&&&#   %@&&&.   &@@@   %   .@@@@@,   @@   ,@@@@@.   @@@@@@@@@@@@@@
+// (&&&&&&&@   %&&&&@   %&&&&.  .@@@@@@&@   @@@@@@@   @&   @@@@@@&   @@@@@@@@@@@@@@
+// (&&&&&&&&,    @%      &&        &&@@@@@    /@*    @@@@    (@/     @@@.    @@@@@@
+// (&&&&&&&&&&(    ,&@   @&        &&@@@@@@&*     *&@@@@@@&     @@   @@@&   @@@@@@@
+// /%&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&@@@@@@@@@@@@@@@@@@@@@@@&&@@@@@@@@@@@@@@@@@
+// /%%%%%%%%%&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&@@@@@@@@@@@@
+
+/**
+ * @title Maschine Dutch Auction Contract
+ * @author arod.studio and Fingerprints DAO
+ * @notice This contract implements a Dutch Auction for NFTs (Non-Fungible Tokens).
+ * The auction starts at a high price, decreasing over time until a bid is made or
+ * a reserve price is reached. Users bid for a quantity of NFTs. They can withdraw
+ * their funds after the auction, or claim a refund if conditions are met.
+ * Additionally, users can claim additional NFTs using their prospective refunds
+ * while the auction is ongoing.
+ * The auction can be paused, unpaused, and configured by an admin.
+ * Security features like reentrancy guard, overflow/underflow checks,
+ * and signature verification are included.
+ *
+ * SPDX-License-Identifier: MIT
+ */
 pragma solidity 0.8.17;
 
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
@@ -11,7 +45,12 @@ import "./INFT.sol";
 
 // import "hardhat/console.sol";
 
-/// @notice Fingerprints DAO Ductch Auction
+/**
+ * @title Dutch Auction Contract
+ * @dev This contract manages a dutch auction for NFT tokens. Users can bid,
+ * claim refunds, claim tokens, and admins can refund users.
+ * The contract is pausable and non-reentrant for safety.
+ */
 contract DutchAuction is
   IDutchAuction,
   AccessControl,
