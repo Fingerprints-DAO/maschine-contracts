@@ -46,6 +46,7 @@ task("deploy", "Deploy contracts to testnet and mainnet")
         deployedContract = await factory.deploy(
           ...(contract.args?.map((a) => (typeof a === "function" ? a() : a)) ??
             [])
+          // { gasPrice: ethers.utils.parseUnits("9", "gwei") }
         );
 
         if (contract.waitForConfirmation) {

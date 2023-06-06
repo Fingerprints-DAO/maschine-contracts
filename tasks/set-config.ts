@@ -1,14 +1,7 @@
 import { task, types } from "hardhat/config";
 
-task("set-config", "Start the auction by setting the config")
-  .addOptionalParam(
-    "maschineAddress",
-    "Maschine contract address",
-    // process.env.AUCTION_ADDRESS,
-    process.env.ERC721_ADDRESS,
-    types.string
-  )
-  .setAction(async ({ contractAddress }, { ethers }) => {
+task("set-config", "Start the auction by setting the config").setAction(
+  async (_, { ethers }) => {
     const { chainId } = await ethers.provider.getNetwork();
     const {
       contractAddresses: { DutchAuction },
@@ -20,17 +13,35 @@ task("set-config", "Start the auction by setting the config")
     // set contract address
     const nftContract = nftFactory.attach(DutchAuction);
 
-    const startTime = Math.floor(Date.now() / 1000) - 100;
-    const endTime = startTime + 3 * 3600;
+    // const startTime = Math.floor(Date.now() / 1000) + 60 * 60 * 0.5; // 30 min
+    const startTime = Math.floor(Date.now() / 1000) + 60; // 1 minute
+    // const startTime = Math.floor(Date.now() / 1000) + 120;
+    // const endTime = startTime + 60 * 60 * 5;
+    // const endTime = startTime + 1.5 * 3600;
+    const endTime = startTime + 60 * 90;
+    // const endTime = startTime + 60 * 60 * 12; // 12 hours
 
-    await nftContract.setConfig(
-      ethers.utils.parseEther("2"),
+    console.log(chainId, DutchAuction);
+
+    const tx = await nftContract.setConfig(
+      // ethers.utils.parseEther("0.01"),
+      // ethers.utils.parseEther("0.001"),
+      // ethers.utils.parseEther("0.05"),
+      ethers.utils.parseEther("3"),
       ethers.utils.parseEther("0.2"),
-      ethers.utils.parseEther("10"),
-      30 * 60,
+      ethers.utils.parseEther("5"),
+      0,
       startTime,
-      endTime
+      endTime,
+      {
+        // gasPrice: ethers.utils.parseUnits("14", "gwei"),
+        // gasLimit: 100000,
+        // nonce: 18,
+      }
     );
 
+    console.log(tx.hash);
+    await tx.wait();
     console.log("All configs setted");
-  });
+  }
+);

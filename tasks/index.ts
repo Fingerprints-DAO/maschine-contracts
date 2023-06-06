@@ -9,3 +9,4 @@ export * from "./deploy";
 export * from "./log-price";
 export * from "./log-info";
 export * from "./mint";
+export * from "./withdrawFunds";
