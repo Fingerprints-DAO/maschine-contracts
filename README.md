@@ -2,9 +2,10 @@
 
 This Dutch Auction Contract is a specialized Ethereum smart contract implemented to facilitate the sale of Non-Fungible Tokens (NFTs) in a linear decreasing price format.
 
-[Maschine](https://maschine.fingerprintsdao.xyz/) by [Harm van den Dorpel](https://harm.work/), in collaboration with [Mercedes-Benz](https://nxt.mercedes-benz.com/) and [Fingerprints DAO](https://fingerprintsdao.xyz/).
+[Maschine](https://maschine.fingerprintsdao.xyz/) is a project by [Harm van den Dorpel](https://harm.work/), in collaboration with [Mercedes-Benz](https://nxt.mercedes-benz.com/) and [Fingerprints DAO](https://fingerprintsdao.xyz/).
 
-Website and Dutch Auction Contract developed by [arod.studio](https://arod.studio/)
+[ERC-721 - NFT](https://github.com/harmvandendorpel/maschine-token-contract) smart contract developed by [Harm van den Dorpel](https://harm.work/).
+[Website](https://maschine.fingerprintsdao.xyz/) and [Dutch Auction Contract](https://etherscan.io/address/0x86e263cadd1cace347a752fe84c065823bca66a1#code) developed by [arod.studio](https://arod.studio/).
 
 ## Overview
 
