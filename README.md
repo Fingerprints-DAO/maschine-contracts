@@ -144,4 +144,4 @@ This project is open-source and contributions are welcome. Please feel free to f
 
 ## License
 
-This project is [MIT licensed](./LICENSE).
+This project is [MIT licensed](./LICENSE.md).
