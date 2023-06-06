@@ -407,7 +407,12 @@ contract DutchAuction is
     if (!success) revert TransferFailed();
   }
 
-  /// @notice Claim refund payment
+  /**
+   * @notice Allows a participant to claim their refund after the auction ends.
+   * Refund is calculated based on the difference between their contribution and the final settled price.
+   * This function can only be called after the refund delay time has passed post-auction end.
+   * Note: If the function reverts with 'ClaimRefundNotReady', it means the refund delay time has not passed yet.
+   */
   function claimRefund() external nonReentrant whenNotPaused validConfig {
     Config memory config = _config;
     if (config.endTime + config.refundDelayTime >= block.timestamp)
@@ -416,8 +421,14 @@ contract DutchAuction is
     _claimRefund(msg.sender);
   }
 
-  /// @notice Admin forces users to claim refund
-  /// @param accounts User addresses
+  /**
+   * @notice Admin-enforced claim of refunds for a list of user addresses.
+   * This function is identical to `claimRefund` but allows an admin to force
+   * users to claim their refund. Can only be called after the refund delay time has passed post-auction end.
+   * Only callable by addresses with the DEFAULT_ADMIN_ROLE.
+   * Note: If the function reverts with 'ClaimRefundNotReady', it means the refund delay time has not passed yet.
+   * @param accounts An array of addresses for which refunds will be claimed.
+   */
   function refundUsers(
     address[] memory accounts
   )
@@ -437,8 +448,13 @@ contract DutchAuction is
     }
   }
 
-  /// @dev Claim refund
-  /// @param account User address
+  /**
+   * @dev Internal function for processing refunds.
+   * The function calculates the refund as the user's total contribution minus the amount spent on bidding.
+   * It then sends the refund (if any) to the user's account.
+   * Note: If the function reverts with 'UserAlreadyClaimed', it means the user has already claimed their refund.
+   * @param account Address of the user claiming the refund.
+   */
   function _claimRefund(address account) internal {
     User storage user = _userData[account];
     if (user.refundClaimed) revert UserAlreadyClaimed();
@@ -452,9 +468,12 @@ contract DutchAuction is
     }
   }
 
-  /// @notice Mint `qty` NFTs to `to` address
-  /// @param to To address
-  /// @param qty Amount of NFTs to mint
+  /**
+   * @dev Internal function to mint a specified quantity of NFTs for a recipient.
+   * This function mints 'qty' number of NFTs to the 'to' address.
+   * @param to Recipient address.
+   * @param qty Number of NFTs to mint.
+   */
   function _mintTokens(address to, uint32 qty) internal {
     for (uint32 i; i != qty; ++i) {
       nftContractAddress.mint(to);
